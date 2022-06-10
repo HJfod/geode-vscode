@@ -1,0 +1,84 @@
+{
+	"name": "geode-support",
+	"displayName": "Geode Support",
+	"description": "Support for the Geode modding framework",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.68.0"
+	},
+	"author": {
+		"email": "dreadrollmusic@gmail.com",
+		"name": "HJfod",
+		"url": "https://github.com/geode-sdk"
+	},
+	"publisher": "HJfod",
+	"repository": {
+		"url": "https://github.com/geode-sdk/vscode-support"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onCommand:geode-support.launchGD",
+		"onCommand:geode-support.selectInstallation",
+		"onLanguage:cpp"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "geode-support.launchGD",
+				"title": "Geode: Launch Geometry Dash"
+			},
+			{
+				"command": "geode-support.selectInstallation",
+				"title": "Geode: Select Working Installation"
+			}
+		],
+		"configuration": {
+			"title": "Geode Configuration",
+			"properties": {
+				"geode-support.geodeSuitePath": {
+					"type": "string",
+					"description": "Path to Geode Suite",
+					"default": ""
+				},
+				"geode-support.workingInstallation": {
+					"type": "integer",
+					"description": "Selected installation of GD",
+					"default": 0
+				},
+				"geode-support.spriteSearchDirectories": {
+					"type": "array",
+					"description": "Sprite & spritesheet search directories for intellisense",
+					"default": []
+				}
+			}
+		}
+	},
+	"icon": "geode-circle-no-gradient.png",
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"pretest": "npm run compile && npm run lint",
+		"lint": "eslint src --ext ts",
+		"test": "node ./out/test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/glob": "^7.2.0",
+		"@types/mocha": "^9.1.1",
+		"@types/node": "16.x",
+		"@types/vscode": "^1.68.0",
+		"@typescript-eslint/eslint-plugin": "^5.27.0",
+		"@typescript-eslint/parser": "^5.27.0",
+		"@vscode/test-electron": "^2.1.3",
+		"eslint": "^8.16.0",
+		"glob": "^8.0.3",
+		"mocha": "^10.0.0",
+		"typescript": "^4.7.2"
+	},
+	"dependencies": {
+		"typescript-json-serializer": "^4.2.0"
+	}
+}
