@@ -1,12 +1,6 @@
-import { workspace } from 'vscode';
+import { workspace, window } from 'vscode';
 import { JsonObject, JsonProperty, JsonSerializer } from 'typescript-json-serializer';
-import { readFileSync } from 'fs';
-
-export interface Options {
-    geodeSuitePath: string;
-    workingInstallation: number;
-    spriteSearchDirectories: string[];
-}
+import { existsSync, readFileSync } from 'fs';
 
 export interface Installation {
     path: string;
@@ -22,18 +16,49 @@ export class ConfigJson {
     installations: Installation[] = [];
 }
 
-const opt: Options = workspace.getConfiguration('geode-support') as any;
-const config = new JsonSerializer().deserializeObject(
-    JSON.parse(readFileSync(`${getOptions().geodeSuitePath}/../config.json`).toString()),
-    ConfigJson
-) ?? null;
+export class Options {
+    private static instance = new Options();
 
-export function getOptions(): Options {
-    return opt;
+    public geodeSuitePath: string = "";
+    public workingInstallation: number = 0;
+    public spriteSearchDirectories: string[] = [];
+
+    private constructor() {
+        this.refresh();
+    }
+
+    private refresh() {
+        const config = workspace.getConfiguration('geode-support');
+        this.geodeSuitePath = config.get('geodeSuitePath') as string;
+        this.workingInstallation = config.get('workingInstallation') as number;
+        this.spriteSearchDirectories = config.get('spriteSearchDirectories') as string[];
+    }
+
+    public update(option: string, value: any) {
+        workspace.getConfiguration('geode-support').update(option, value);
+        this.refresh();
+    }
+
+    public static get() {
+        return Options.instance;
+    }
 }
 
-export function updateOption(option: string, value: any) {
-    workspace.getConfiguration('geode-support').update(option, value);
+let config: ConfigJson | null = null;
+
+export function loadConfigJson() {
+    const path = `${Options.get().geodeSuitePath}/../config.json`;
+    if (existsSync(path)) {
+        config = new JsonSerializer().deserializeObject(
+            JSON.parse(readFileSync(path).toString()),
+            ConfigJson
+        ) ?? null;
+    }
+	const env = process.env.GEODE_SUITE as string;
+	if (env && existsSync(env)) {
+		Options.get().update('geodeSuitePath', env);
+		window.showInformationMessage('Geode: Automatically detected Suite path :)');
+	}
 }
 
 export function getConfigJson(): ConfigJson | null {

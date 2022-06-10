@@ -1,4 +1,4 @@
-import { getOptions, getWorkingInstallation } from './config';
+import { Options, getWorkingInstallation } from './config';
 import { join } from 'path';
 import { readdirSync, readFileSync } from 'fs';
 import { OutputChannel } from 'vscode';
@@ -51,8 +51,8 @@ export class SpriteDatabase {
 
     public refresh(channel: OutputChannel | null = null) {
         this.searchDirectories = [
-            join(getWorkingInstallation()?.path as string, 'Resources'),
-            ...getOptions().spriteSearchDirectories
+            join(getWorkingInstallation()?.path ?? "", 'Resources'),
+            ...Options.get().spriteSearchDirectories
         ];
 	    channel?.append('Loading sprites... ');
         this.refreshSprites();

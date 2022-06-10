@@ -1,31 +1,24 @@
-import { window, commands, workspace, languages, ExtensionContext, CompletionItem, CompletionItemKind } from 'vscode';
-import { existsSync, readFile, readFileSync } from 'fs';
+import { window, commands, languages, ExtensionContext, CompletionItem, CompletionItemKind } from 'vscode';
+import { existsSync } from 'fs';
 import { execSync, spawn } from 'child_process';
 import { join } from 'path';
-import { getOptions, getWorkingInstallation, getConfigJson, updateOption } from './config';
+import { Options, getWorkingInstallation, getConfigJson, loadConfigJson } from './config';
 import { SpriteDatabase } from './sprite';
 
 function isSuiteInstalled(): boolean {
-	const path = getOptions().geodeSuitePath;
-	if (path) {
-		return existsSync(path);
-	}
-	const env = process.env.GEODE_SUITE as string;
-	if (env && existsSync(env)) {
-		updateOption('geodeSuitePath', env);
-		window.showInformationMessage('Geode: Automatically detected Suite path :)');
-		return true;
-	}
-	return false;
+	return existsSync(Options.get().geodeSuitePath ?? "");
 }
 
 function runCliCmd(cmd: string) {
-	return execSync(`${getOptions().geodeSuitePath}/../bin/geode.exe ${cmd}`).toString();
+	return execSync(`${Options.get().geodeSuitePath}/../bin/geode.exe ${cmd}`).toString();
 }
 
 export function activate(context: ExtensionContext) {
-	
 	console.log('Geode Support loaded :-)');
+
+	loadConfigJson();
+
+	console.log('Loaded config.json');
 
 	if (!isSuiteInstalled()) {
 		window.showErrorMessage(
@@ -34,12 +27,18 @@ export function activate(context: ExtensionContext) {
 		);
 	}
 	
+	console.log('Checked suite');
+
 	const channel = window.createOutputChannel('Geode');
 
-	channel.appendLine(`Geode Suite location: ${getOptions().geodeSuitePath}`);
+	channel.appendLine(`Geode Suite location: ${Options.get().geodeSuitePath}`);
 	channel.appendLine(`Geode CLI version: ${runCliCmd('--version')}`);
 	
+	console.log('Refreshing sprite database');
+
 	SpriteDatabase.get().refresh(channel);
+
+	console.log('Registering functions');
 
 	context.subscriptions.push(commands.registerCommand('geode-support.launchGD', () => {
 		if (!isSuiteInstalled()) {
@@ -110,6 +109,8 @@ export function activate(context: ExtensionContext) {
 			}
 		}
 	));
+
+	console.log('Geode Support done :-)');
 }
 
 export function deactivate() {}
