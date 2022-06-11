@@ -16,55 +16,59 @@ export class ConfigJson {
     installations: Installation[] = [];
 }
 
-export class Options {
-    private static instance = new Options();
-
-    public geodeSuitePath: string = "";
-    public workingInstallation: number = 0;
-    public spriteSearchDirectories: string[] = [];
-
-    private constructor() {
-        this.refresh();
-    }
-
-    private refresh() {
-        const config = workspace.getConfiguration('geode-support');
-        this.geodeSuitePath = config.get('geodeSuitePath') as string;
-        this.workingInstallation = config.get('workingInstallation') as number;
-        this.spriteSearchDirectories = config.get('spriteSearchDirectories') as string[];
-    }
-
-    public update(option: string, value: any) {
-        workspace.getConfiguration('geode-support').update(option, value);
-        this.refresh();
-    }
-
-    public static get() {
-        return Options.instance;
-    }
+export interface Options {
+    geodeSuitePath: string;
+    workingInstallation: number;
+    spriteSearchDirectories: string[];
 }
 
-let config: ConfigJson | null = null;
+let opt: Options = {
+    geodeSuitePath: "",
+    workingInstallation: 0,
+    spriteSearchDirectories: [],
+};
 
-export function loadConfigJson() {
-    const path = `${Options.get().geodeSuitePath}/../config.json`;
+export function refreshOptions() {
+    const config = workspace.getConfiguration('geode-support');
+    opt.geodeSuitePath = config.get('geodeSuitePath') as string;
+    opt.workingInstallation = config.get('workingInstallation') as number;
+    opt.spriteSearchDirectories = config.get('spriteSearchDirectories') as string[];
+}
+
+export function updateOption(option: string, value: any) {
+    workspace.getConfiguration('geode-support').update(option, value);
+    refreshOptions();
+}
+
+export function getOptions() {
+    return opt;
+}
+
+let configJson: ConfigJson | null = null;
+
+export function setupConfig() {
+	refreshOptions();
+    
+    if (!getOptions().geodeSuitePath) {
+        const env = process.env.GEODE_SUITE as string;
+        if (env && existsSync(env)) {
+            updateOption('geodeSuitePath', env);
+            window.showInformationMessage('Geode: Automatically detected Suite path :)');
+        }
+    }
+    const path = `${getOptions().geodeSuitePath}/../config.json`;
     if (existsSync(path)) {
-        config = new JsonSerializer().deserializeObject(
+        configJson = new JsonSerializer().deserializeObject(
             JSON.parse(readFileSync(path).toString()),
             ConfigJson
         ) ?? null;
     }
-	const env = process.env.GEODE_SUITE as string;
-	if (env && existsSync(env)) {
-		Options.get().update('geodeSuitePath', env);
-		window.showInformationMessage('Geode: Automatically detected Suite path :)');
-	}
 }
 
-export function getConfigJson(): ConfigJson | null {
-    return config;
+export function getConfig() {
+    return configJson;
 }
 
 export function getWorkingInstallation(): Installation | undefined {
-	return getConfigJson()?.installations[getConfigJson()?.workingInstallation ?? 0];
+    return configJson?.installations[configJson.workingInstallation];
 }

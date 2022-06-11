@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <style>
+            a:focus,
+            input:focus,
+            select:focus,
+            textarea:focus {
+                outline: 1px solid -webkit-focus-ring-color;
+                outline-offset: -1px
+            }
+
+            input {
+                height: 27px;
+                padding: 6px;
+                border: solid 1px;
+                font-size: 13px;
+                font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+                color: var(--vscode-settings-textInputForeground);
+                background: var(--vscode-settings-textInputBackground);
+                border: 1px solid var(--vscode-settings-textInputBorder);
+            }
+
+            textarea {
+                white-space: nowrap;
+                padding: 4px, 4px;
+                font-size: 13px;
+                font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+                color: var(--vscode-settings-textInputForeground);
+                background: var(--vscode-settings-textInputBackground);
+                border: 1px solid var(--vscode-settings-textInputBorder);
+            }
+
+            button {
+                color: var(--vscode-button-foreground);
+                background-color: var(--vscode-button-background);
+                border: solid 1px var(--vscode-contrastBorder);
+                padding: 6px 14px;
+            }
+
+            button:hover {
+                background-color: var(--vscode-button-hoverBackground);
+            }
+
+            button:focus {
+                outline: 1px solid -webkit-focus-ring-color;
+                outline-offset: 2px
+            }
+
+            button:active {
+                outline: none;
+            }
+
+            select {
+                width: 300px;
+                height: 27px;
+                font-size: 13px;
+                font-family:sans-serif;
+                color: var(--vscode-settings-dropdownForeground);
+                background: var(--vscode-settings-dropdownBackground);
+                border: 1px solid var(--vscode-settings-dropdownBorder);
+            }
+
+            hr {
+                opacity: 20%
+            }
+
+            html {
+                height: 100%;
+            }
+
+            body {
+                display: flex;
+                align-items: stretch;
+                flex-direction: column;
+                height: 100%;
+            }
+
+            main {
+                display: grid;
+                gap: 1rem;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                grid-auto-rows: 1fr;
+                overflow: auto;
+            }
+
+            article {
+                max-width: 1fr;
+                max-height: 1fr;
+            }
+
+            article p {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 1fr;
+            }
+
+            article img {
+                max-width: 1fr;
+                height: 80px;
+            }
+        </style>
+
+    </head>
+    <body>
+        <header>
+            <p>DATABASE_INFO</p>
+
+            <select id="select-source">
+                <option value="all">All</option>
+                <option value="sprites">Standalone</option>
+                DATABASE_OPTIONS
+            </select>
+
+            <p>Search:</p>
+            <input id="search" type="search">
+            <p id="search-count">Found my balls lmao</p>
+
+            <hr>
+        </header>
+
+        <main></main>
+
+        <script>
+            (function() {
+
+                const vscode = acquireVsCodeApi();
+                const content = document.querySelector('main');
+                const select = document.getElementById('select-source');
+                const search = document.getElementById('search');
+                const searchCount = document.getElementById('search-count');
+                let dataCache = [];
+
+                select.addEventListener('change', _ => {
+                    updateState();
+                });
+
+                search.addEventListener('input', _ => {
+                    updateData();
+                });
+
+                function isElementVisible(elm) {
+                    function posY(elm) {
+                        const test = elm, top = 0;
+                        while (test && test.tagName.toLowerCase() !== "body") {
+                            top += test.offsetTop;
+                            test = test.offsetParent;
+                        }
+                        return top;
+                    }
+
+                    function viewPortHeight() {
+                        const de = document.documentElement;
+                        if (window.innerWidth) {
+                            return window.innerHeight;
+                        } else if (de && !isNaN(de.clientHeight)) {
+                            return de.clientHeight;
+                        }
+                        return 0;
+                    }
+
+                    function scrollY() {
+                        if (window.pageYOffset) {
+                            return window.pageYOffset;
+                        }
+                        return Math.max(document.documentElement.scrollTop, document.body.scrollTop);
+                    }
+
+                    return (posY(elm) > (viewPortHeight() + scrollY()));
+                }
+
+                function fetchImage(article) {
+                    vscode.postMessage({
+                        command: 'load-image',
+                        path: article.getAttribute('img-path'),
+                        element: article.getAttribute('id')
+                    });
+                }
+        
+                function updateState() {
+                    if (select.value.startsWith('sheet:')) {
+                        vscode.postMessage({
+                            command: 'request-sheet',
+                            sheet: select.value.substring(6)
+                        });
+                    } else {
+                        vscode.postMessage({
+                            command: `request-${select.value}`
+                        });
+                    }
+                }
+
+                function filterSearch(spr) {
+                    return spr.name.replace(/\s/g, '').toLowerCase().includes(
+                        search.value.replace(/\s/g, '').toLowerCase()
+                    );
+                }
+
+                function updateData(data = null) {
+                    content.innerHTML = '';
+                    if (data) {
+                        dataCache = data;
+                    } else {
+                        data = dataCache;
+                    }
+                    data = data.filter(filterSearch);
+                    data.forEach(spr => {
+                        const article = document.createElement('article');
+                        article.setAttribute('img-path', spr.path);
+                        article.classList.add('notloaded');
+                        article.setAttribute('id', spr.name);
+                        article.innerHTML = `
+                            <img>
+                            <p>${spr.name}</p>
+                            <button>Use</button>
+                        `;
+                        content.appendChild(article);
+                    });
+                    searchCount.innerHTML = `Found ${data.length} sprites`;
+                    updateVisibility();
+                }
+
+                function updateVisibility() {
+                    for (const elem of document.querySelectorAll('.notloaded')) {
+                        // if (!isElementVisible(elem)) {
+                        //     break;
+                        // }
+                        elem.classList.remove('notloaded');
+                        fetchImage(elem);
+                    };
+                }
+
+                // document.addEventListener('scroll', e => {
+                //     updateVisibility();
+                // });
+
+                window.addEventListener('message', e => {
+                    const message = e.data;
+                    switch (message.command) {
+                        case 'update': {
+                            updateData(message.data);
+                        } break;
+
+                        case 'image': {
+                            document.getElementById(message.element).querySelector('img').src = `data:image/png;base64,${message.data}`;
+                        } break;
+                    }
+                });
+
+                vscode.postMessage({
+                    command: "request-all"
+                });
+
+            }())
+        </script>
+    </body>
+</html>

@@ -2,7 +2,7 @@
 	"name": "geode-support",
 	"displayName": "Geode Support",
 	"description": "Support for the Geode modding framework",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"engines": {
 		"vscode": "^1.68.0"
 	},
@@ -13,7 +13,7 @@
 	},
 	"publisher": "HJfod",
 	"repository": {
-		"url": "https://github.com/geode-sdk/vscode-support"
+		"url": "https://github.com/hjfod/geode-vscode"
 	},
 	"categories": [
 		"Other"
@@ -21,6 +21,7 @@
 	"activationEvents": [
 		"onCommand:geode-support.launchGD",
 		"onCommand:geode-support.selectInstallation",
+		"onCommand:geode-support.browseSpriteDatabase",
 		"onLanguage:cpp"
 	],
 	"main": "./out/extension.js",
@@ -33,10 +34,21 @@
 			{
 				"command": "geode-support.selectInstallation",
 				"title": "Geode: Select Working Installation"
+			},
+			{
+				"command": "geode-support.browseSpriteDatabase",
+				"title": "Geode: Browse Sprite Database",
+				"enablement": "!editorReadonly"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "geode-support.browseSpriteDatabase",
+				"key": "Ctrl+Shift+J"
 			}
 		],
 		"configuration": {
-			"title": "Geode Configuration",
+			"title": "Geode Support",
 			"properties": {
 				"geode-support.geodeSuitePath": {
 					"type": "string",
@@ -56,7 +68,7 @@
 			}
 		}
 	},
-	"icon": "geode-circle-no-gradient.png",
+	"icon": "images/geode-circle-no-gradient.png",
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",

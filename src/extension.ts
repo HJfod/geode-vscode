@@ -2,21 +2,21 @@ import { window, commands, languages, ExtensionContext, CompletionItem, Completi
 import { existsSync } from 'fs';
 import { execSync, spawn } from 'child_process';
 import { join } from 'path';
-import { Options, getWorkingInstallation, getConfigJson, loadConfigJson } from './config';
-import { SpriteDatabase } from './sprite';
+import { getOptions, setupConfig, getWorkingInstallation, getConfig } from './config';
+import { buildDatabasePanel, getSpriteDatabase, refreshSpriteDatabase } from './sprite';
 
 function isSuiteInstalled(): boolean {
-	return existsSync(Options.get().geodeSuitePath ?? "");
+	return existsSync(getOptions().geodeSuitePath ?? "");
 }
 
 function runCliCmd(cmd: string) {
-	return execSync(`${Options.get().geodeSuitePath}/../bin/geode.exe ${cmd}`).toString();
+	return execSync(`${getOptions().geodeSuitePath}/../bin/geode.exe ${cmd}`).toString();
 }
 
 export function activate(context: ExtensionContext) {
 	console.log('Geode Support loaded :-)');
 
-	loadConfigJson();
+	setupConfig();
 
 	console.log('Loaded config.json');
 
@@ -31,12 +31,12 @@ export function activate(context: ExtensionContext) {
 
 	const channel = window.createOutputChannel('Geode');
 
-	channel.appendLine(`Geode Suite location: ${Options.get().geodeSuitePath}`);
+	channel.appendLine(`Geode Suite location: ${getOptions().geodeSuitePath}`);
 	channel.appendLine(`Geode CLI version: ${runCliCmd('--version')}`);
 	
 	console.log('Refreshing sprite database');
 
-	SpriteDatabase.get().refresh(channel);
+	refreshSpriteDatabase(channel);
 
 	console.log('Registering functions');
 
@@ -70,7 +70,7 @@ export function activate(context: ExtensionContext) {
 			return;
 		}
 		window.showQuickPick(
-			getConfigJson()?.installations.map((s, ix) => {
+			getConfig()?.installations.map((s, ix) => {
 				return {
 					label: join(s.path, s.executable),
 					description: s.nightly ? 'Nightly' : 'Stable',
@@ -88,6 +88,10 @@ export function activate(context: ExtensionContext) {
 		});
 	}));
 
+	context.subscriptions.push(commands.registerCommand('geode-support.browseSpriteDatabase', () => {
+		buildDatabasePanel(context);
+	}));
+
 	context.subscriptions.push(languages.registerCompletionItemProvider(
 		{
 			scheme: "file",
@@ -95,17 +99,15 @@ export function activate(context: ExtensionContext) {
 		},
 		{
 			provideCompletionItems(doc, pos) {
-				return Array.from(
-					SpriteDatabase.get().sheetSprites?.values()
-				).concat(Array.from(
-					SpriteDatabase.get().sprites?.values()
-				)).map(s => {
-					const item = new CompletionItem(s.sprite, CompletionItemKind.Value);
-					item.documentation = s.sheet ?
-						`Sprite frame from sheet ${s.sheet}` :
-						"Standalone sprite";
-					return item;
-				});
+				return Object.keys(getSpriteDatabase().sheets).map(key => {
+					return getSpriteDatabase().sheets[key].map(spr => {
+						const item = new CompletionItem(spr.name, CompletionItemKind.Value);
+						item.detail = key;
+						return item;
+					});
+				}).flat().concat(getSpriteDatabase().sprites.map(spr => {
+					return new CompletionItem(spr.name, CompletionItemKind.Value);
+				}));
 			}
 		}
 	));
