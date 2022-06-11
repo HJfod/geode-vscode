@@ -1,6 +1,6 @@
 import { getOptions, getWorkingInstallation } from './config';
 import { join } from 'path';
-import { readdirSync, readFileSync } from 'fs';
+import { readdirSync, readFileSync, promises } from 'fs';
 import { window, OutputChannel, ViewColumn, Uri, ExtensionContext } from 'vscode';
 
 interface Sprite {
@@ -134,14 +134,28 @@ export function buildDatabasePanel(context: ExtensionContext) {
 
                 case 'load-image': {
                     if (message.path.endsWith('.plist')) {
-                        return;
+                        panel.webview.postMessage({
+                            command: 'image',
+                            element: message.element,
+                            data: ""
+                        });
+                    } else {
+                        promises.readFile(message.path, { encoding: 'base64' })
+                            .then(value => {
+                                panel.webview.postMessage({
+                                    command: 'image',
+                                    element: message.element,
+                                    data: value.toString()
+                                });
+                            })
+                            .catch(_ => {
+                                panel.webview.postMessage({
+                                    command: 'image',
+                                    element: message.element,
+                                    data: ""
+                                });
+                            });
                     }
-                    const data = readFileSync(message.path, { encoding: 'base64' });
-                    panel.webview.postMessage({
-                        command: 'image',
-                        element: message.element,
-                        data: data.toString()
-                    });
                 } break;
 
                 default: {

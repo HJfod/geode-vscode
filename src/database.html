@@ -83,24 +83,50 @@
                 display: grid;
                 gap: 1rem;
                 grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                grid-auto-rows: 1fr;
+                grid-auto-rows: 150px;
                 overflow: auto;
+                align-self: strech;
+                align-items: center;
             }
 
             article {
-                max-width: 1fr;
-                max-height: 1fr;
+                display: flex;
+                flex-direction: column;
+                width: 150px;
+                height: 150px;
+                transition-duration: .5s;
             }
 
             article p {
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 1fr;
+                word-break: break-all;
+                max-width: 150px;
             }
 
             article img {
-                max-width: 1fr;
-                height: 80px;
+                min-height: 0;
+                flex-grow: 1;
+                align-self: center;
+            }
+
+            .loading-circle {
+                display: block;
+                border: 0.3rem solid var(--vscode-settings-textInputBackground);
+                border-radius: 50%;
+                border-top: 0.3rem solid var(--vscode-settings-textInputForeground);
+                width: 2rem;
+                height: 2rem;
+                flex-grow: 1;
+                animation: spin 2s linear infinite;
+                align-self: center;
+            }
+
+            article.hidden {
+                display: none;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
             }
         </style>
 
@@ -134,50 +160,56 @@
                 const searchCount = document.getElementById('search-count');
                 let dataCache = [];
 
+                const observer = new IntersectionObserver(
+                    (entries, observer) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                fetchImage(entry.target);
+                            } else {
+                                unloadImage(entry.target);
+                            }
+                        });
+                    }, {
+                        root: content,
+                        threshold: 0.5
+                    }
+                );
+
                 select.addEventListener('change', _ => {
                     updateState();
                 });
 
                 search.addEventListener('input', _ => {
-                    updateData();
+                    updateSearch();
                 });
 
-                function isElementVisible(elm) {
-                    function posY(elm) {
-                        const test = elm, top = 0;
-                        while (test && test.tagName.toLowerCase() !== "body") {
-                            top += test.offsetTop;
-                            test = test.offsetParent;
-                        }
-                        return top;
+                function addLoadingCircle(article) {
+                    if (!article.querySelector('.loading-circle')) {
+                        const circle = document.createElement('div');
+                        circle.classList.add('loading-circle');
+                        article.insertBefore(circle, article.querySelector('img'));
                     }
-
-                    function viewPortHeight() {
-                        const de = document.documentElement;
-                        if (window.innerWidth) {
-                            return window.innerHeight;
-                        } else if (de && !isNaN(de.clientHeight)) {
-                            return de.clientHeight;
-                        }
-                        return 0;
-                    }
-
-                    function scrollY() {
-                        if (window.pageYOffset) {
-                            return window.pageYOffset;
-                        }
-                        return Math.max(document.documentElement.scrollTop, document.body.scrollTop);
-                    }
-
-                    return (posY(elm) > (viewPortHeight() + scrollY()));
                 }
 
                 function fetchImage(article) {
+                    addLoadingCircle(article);
                     vscode.postMessage({
                         command: 'load-image',
                         path: article.getAttribute('img-path'),
                         element: article.getAttribute('id')
                     });
+                }
+
+                function unloadImage(article) {
+                    const img = article.querySelector('img');
+                    img.src = '';
+                    article.querySelector(".loading-circle")?.remove();
+                }
+
+                function setImage(article, data) {
+                    const img = article.querySelector('img');
+                    img.src = `data:image/png;base64,${data}`;
+                    article.querySelector(".loading-circle")?.remove();
                 }
         
                 function updateState() {
@@ -199,6 +231,17 @@
                     );
                 }
 
+                function updateSearch() {
+                    const show = dataCache.filter(filterSearch);
+                    show.forEach(spr => {
+                        document.getElementById(spr.name).classList.remove('hidden');
+                    });
+                    dataCache.filter(e => !filterSearch(e)).forEach(spr => {
+                        document.getElementById(spr.name).classList.add('hidden');
+                    });
+                    searchCount.innerHTML = `Found ${show.length} sprites`;
+                }
+
                 function updateData(data = null) {
                     content.innerHTML = '';
                     if (data) {
@@ -206,36 +249,20 @@
                     } else {
                         data = dataCache;
                     }
-                    data = data.filter(filterSearch);
                     data.forEach(spr => {
                         const article = document.createElement('article');
                         article.setAttribute('img-path', spr.path);
-                        article.classList.add('notloaded');
                         article.setAttribute('id', spr.name);
                         article.innerHTML = `
                             <img>
                             <p>${spr.name}</p>
                             <button>Use</button>
                         `;
+                        observer.observe(article);
                         content.appendChild(article);
                     });
-                    searchCount.innerHTML = `Found ${data.length} sprites`;
-                    updateVisibility();
+                    updateSearch();
                 }
-
-                function updateVisibility() {
-                    for (const elem of document.querySelectorAll('.notloaded')) {
-                        // if (!isElementVisible(elem)) {
-                        //     break;
-                        // }
-                        elem.classList.remove('notloaded');
-                        fetchImage(elem);
-                    };
-                }
-
-                // document.addEventListener('scroll', e => {
-                //     updateVisibility();
-                // });
 
                 window.addEventListener('message', e => {
                     const message = e.data;
@@ -245,7 +272,7 @@
                         } break;
 
                         case 'image': {
-                            document.getElementById(message.element).querySelector('img').src = `data:image/png;base64,${message.data}`;
+                            setImage(document.getElementById(message.element), message.data);
                         } break;
                     }
                 });
