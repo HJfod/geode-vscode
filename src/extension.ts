@@ -1,9 +1,9 @@
-import { window, commands, languages, ExtensionContext, CompletionItem, CompletionItemKind } from 'vscode';
+import { window, commands, languages, ExtensionContext, CompletionItem, CompletionItemKind, DocumentHighlight } from 'vscode';
 import { existsSync } from 'fs';
 import { execSync, spawn } from 'child_process';
 import { join } from 'path';
-import { getOptions, setupConfig, getWorkingInstallation, getConfig } from './config';
-import { buildDatabasePanel, getSpriteDatabase, refreshSpriteDatabase } from './sprite';
+import { getOptions, setupConfig, getWorkingInstallation, getConfig } from './utils/config';
+import { buildDatabasePanel, getSpriteDatabase, refreshSpriteDatabase } from './utils/sprite';
 
 function isSuiteInstalled(): boolean {
 	return existsSync(getOptions().geodeSuitePath ?? "");
@@ -98,7 +98,7 @@ export function activate(context: ExtensionContext) {
 			language: "cpp"
 		},
 		{
-			provideCompletionItems(doc, pos) {
+			provideCompletionItems() {
 				return Object.keys(getSpriteDatabase().sheets).map(key => {
 					return getSpriteDatabase().sheets[key].map(spr => {
 						const item = new CompletionItem(spr.name, CompletionItemKind.Value);

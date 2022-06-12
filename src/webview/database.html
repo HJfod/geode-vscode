@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <style>
+            a:focus,
+            input:focus,
+            select:focus,
+            textarea:focus {
+                outline: 1px solid -webkit-focus-ring-color;
+                outline-offset: -1px
+            }
+
+            input {
+                height: 17px;
+                padding: 6px;
+                border: solid 1px;
+                font-size: 13px;
+                font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+                color: var(--vscode-settings-textInputForeground);
+                background: var(--vscode-settings-textInputBackground);
+                border: 1px solid var(--vscode-settings-textInputBorder);
+            }
+
+            input[type="search"] {
+                height: 27px;
+            }
+
+            textarea {
+                white-space: nowrap;
+                padding: 4px, 4px;
+                font-size: 13px;
+                font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+                color: var(--vscode-settings-textInputForeground);
+                background: var(--vscode-settings-textInputBackground);
+                border: 1px solid var(--vscode-settings-textInputBorder);
+            }
+
+            button {
+                color: var(--vscode-button-foreground);
+                background-color: var(--vscode-button-background);
+                border: solid 1px var(--vscode-contrastBorder);
+                padding: 6px 14px;
+            }
+
+            button:hover {
+                background-color: var(--vscode-button-hoverBackground);
+            }
+
+            button:focus {
+                outline: 1px solid -webkit-focus-ring-color;
+                outline-offset: 2px
+            }
+
+            button:active {
+                outline: none;
+            }
+
+            select {
+                width: 300px;
+                height: 27px;
+                font-size: 13px;
+                font-family:sans-serif;
+                color: var(--vscode-settings-dropdownForeground);
+                background: var(--vscode-settings-dropdownBackground);
+                border: 1px solid var(--vscode-settings-dropdownBorder);
+            }
+
+            hr {
+                opacity: 20%
+            }
+
+            html {
+                height: 100%;
+            }
+
+            body {
+                display: flex;
+                align-items: stretch;
+                flex-direction: column;
+                height: 100%;
+            }
+
+            main {
+                display: grid;
+                gap: 1rem;
+                grid-template-columns: repeat(auto-fit, 150px);
+                grid-auto-rows: 150px;
+                overflow: auto;
+                align-self: strech;
+                align-items: center;
+            }
+
+            article {
+                display: flex;
+                flex-direction: column;
+                width: 150px;
+                height: 150px;
+                transition-duration: .5s;
+            }
+
+            article p {
+                word-break: break-all;
+                max-width: 150px;
+                margin-top: 0px;
+                margin-bottom: 0px;
+            }
+
+            article p.source {
+                font-style: italic;
+                opacity: 25%;
+                font-size: 0.8em;
+            }
+
+            article > img, article > canvas {
+                min-height: 0;
+                flex-grow: 1;
+                align-self: center;
+            }
+
+            article.hidden {
+                display: none;
+            }
+
+            article div {
+                display: grid;
+                align-self: stretch;
+                grid-template-columns: 4fr 1fr;
+                gap: 5px;
+            }
+
+            article div > button:not(:first-child) {
+                padding: 0px;
+            }
+
+            .side-by-side {
+                display: flex;
+            }
+
+            .side-by-side div {
+                margin-right: 30px;
+            }
+
+            .loading-circle {
+                display: block;
+                border: 0.4rem solid var(--vscode-settings-textInputBackground);
+                border-radius: 50%;
+                border-top: 0.4rem solid var(--vscode-settings-textInputForeground);
+                width: 2rem;
+                height: 2rem;
+                animation: spin 2s linear infinite;
+                align-self: center;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+
+    </head>
+    <body>
+        <header>
+            <p>DATABASE_INFO</p>
+
+            <select id="select-source">
+                <option value="all">All</option>
+                <option value="sprites">Standalone</option>
+                <option value="fonts">Fonts</option>
+                DATABASE_OPTIONS
+            </select>
+            
+            <div class="side-by-side">
+                <div>
+                    <p>Search:</p>
+                    <input id="search" type="search">
+                    <p id="search-count">Found my balls lmao</p>
+                </div>
+
+                <div>
+                    <p>Font text:</p>
+                    <input id="font-test" value="Steve">
+                </div>
+            </div>
+
+            <hr>
+        </header>
+
+        <main></main>
+        
+        <!-- funny lil hack to make ts work -->
+        <script>var exports = {};</script>
+        <script src="DATABASE_SCRIPT" defer></script>
+    </body>
+</html>
