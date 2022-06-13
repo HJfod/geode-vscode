@@ -1,6 +1,6 @@
 
 :root {
-    --item-width:   150px;
+    --item-width:   minmax(150px, 1fr);
     --item-height:  200px;
 }
 
@@ -102,10 +102,6 @@ article {
     align-items: center;
 }
 
-article:nth-child(2n) {
-    background-color: rgba(0, 0, 0, 0.2);
-}
-
 article p {
     word-break: break-all;
     max-width: var(--item-width);
@@ -113,10 +109,17 @@ article p {
     margin-bottom: 2px;
 }
 
-article p.source {
+article a {
+    word-break: break-all;
+    max-width: var(--item-width);
     font-style: italic;
     opacity: 25%;
     font-size: 0.8em;
+}
+
+article a:hover {
+    cursor: pointer;
+    opacity: 100%;
 }
 
 article > #image-div {
@@ -153,6 +156,21 @@ article > #buttons > button:not(:first-child) {
     padding: 0px;
 }
 
+article > .hover-item {
+    display: none;
+    align-self: flex-end;
+}
+
+article:hover > .hover-item {
+    display: initial;
+    position: relative;
+    height: 0;
+}
+
+.hover-item > button {
+    font-size: .8em;
+}
+
 .side-by-side {
     display: flex;
 }
@@ -175,4 +193,8 @@ article > #buttons > button:not(:first-child) {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+.favorite {
+    color: rgb(236, 196, 67);
 }

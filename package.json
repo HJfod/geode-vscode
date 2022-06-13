@@ -60,6 +60,11 @@
 					"description": "Selected installation of GD",
 					"default": 0
 				},
+				"geode-support.databaseShowFavoritesByDefault": {
+					"type": "boolean",
+					"description": "Show Favorites as the listing in the Sprite Database by default instead of All",
+					"default": true
+				},
 				"geode-support.spriteSearchDirectories": {
 					"type": "array",
 					"description": "Sprite & spritesheet search directories for intellisense",
@@ -98,6 +103,7 @@
 		"webpack-cli": "^4.10.0"
 	},
 	"dependencies": {
+		"open-file-explorer": "^1.0.2",
 		"parse-bmfont-ascii": "^1.0.6",
 		"plist": "^3.0.5",
 		"sharp": "^0.30.6",

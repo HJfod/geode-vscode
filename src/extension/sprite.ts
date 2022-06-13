@@ -1,34 +1,37 @@
 import { getOptions, getWorkingInstallation } from './config';
-import { join } from 'path';
-import { readdirSync, readFileSync, promises, existsSync } from 'fs';
-import { window, OutputChannel, ViewColumn, Uri, ExtensionContext, WebviewPanel } from 'vscode';
-import { getBMFontDatabase } from './font';
-import { SpriteDatabase } from '../types/sprite';
-import { getSheetDatabase } from './sheet';
+import { basename, join } from 'path';
+import { readdirSync, readFileSync,  existsSync } from 'fs';
+import { OutputChannel, workspace } from 'vscode';
+import { SpriteCollection, ModJson } from '../types/sprite';
+import { SpriteDatabase } from '../types/SpriteDatabase';
 
 function removeQualityDecorators(file: string) {
     return file.replace(/-uhd|-hd/g, '');
 }
 
-const database: SpriteDatabase = {
-    searchDirectories: [],
-    sheets: {},
-    sprites: [],
-    fonts: [],
-    total: () => { 
-        return database.sprites.length + 
-            database.fonts.length +
-            Object.values(database.sheets).reduce((a, b) => a + b.length, 0);
-    },
-    all: () => {
-        return database.sprites
-            .concat(
-                Object.values(getSpriteDatabase().sheets
-            ).flat())
-            .concat(database.fonts)
-            .sort((a, b) => a.name.localeCompare(b.name));
+function readdirRecursiveSync(dir: string) {
+    let res: string[] = [];
+  
+    readdirSync(dir, { withFileTypes:  true }).forEach(file => {
+        if (file.isDirectory()) {
+            res = res.concat(readdirRecursiveSync(join(dir, file.name)));
+        } else {
+            res.push(join(dir, file.name));
+        }
+    });
+  
+    return res;
+}
+
+export function getModInDir(dir: string): ModJson | null {
+    if (existsSync(join(dir, 'mod.json'))) {
+        const modJson = JSON.parse(
+            readFileSync(join(dir, 'mod.json')).toString()
+        ) as ModJson;
+        return modJson;
     }
-};
+    return null;
+}
 
 export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
     channel?.append('Loading sprites... ');
@@ -39,37 +42,63 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
         ...getOptions().spriteSearchDirectories
     ];
 
+    if (workspace.workspaceFolders) {
+        for (const editor of workspace.workspaceFolders) {
+            // is current workspace a geode mod?
+            if (existsSync(join(editor.uri.fsPath, 'mod.json'))) {
+                database.searchDirectories.push(editor.uri.fsPath);
+            }
+        }
+    }
+
     // reset database
-    database.sprites = [];
-    database.sheets = {};
-    database.fonts = [];
+    database.collections = [];
 
     // search sprites
-    for (let dir of database.searchDirectories) {
+    for (const dir of database.searchDirectories) {
 
         // read all files in directory
-        const files = readdirSync(dir).map(f => removeQualityDecorators(f));
+        const files = readdirRecursiveSync(dir);
+        const modInfo = getModInDir(dir);
+
+        const collection: SpriteCollection = {
+            directory: dir,
+            mod: modInfo,
+            sheets: {},
+            fonts: [],
+            sprites: [],
+        };
 
         // find spritesheets
-        for (const sheet of files) {
-            if (sheet.endsWith('.plist')) {
+        for (const sheetPath of files) {
+            if (sheetPath.endsWith('.plist')) {
                 // check if this is a spritesheet (does it have a corresponding .png file)
-                if (!existsSync(join(dir, sheet.replace('.plist', '.png')))) {
+                if (!existsSync(sheetPath.replace('.plist', '.png'))) {
                     continue;
                 }
 
+                const sheetName = removeQualityDecorators(basename(sheetPath));
+
                 // read sheet data and find all *.png strings inside
-                readFileSync(join(dir, sheet)).toString().match(/\w+\.png/g)?.forEach(match => {
+                readFileSync(sheetPath).toString().match(/\w+\.png/g)?.forEach(match => {
                     match = removeQualityDecorators(match);
                     // check that this is not the same as the sheet (metadata field)
-                    if (match.replace('.png', '.plist') !== sheet) {
+                    if (match.replace('.png', '.plist') !== sheetName) {
                         // has a sheet with this name already been found?
-                        if (!(sheet in database.sheets)) {
-                            database.sheets[sheet] = [{ name: match, path: join(dir, sheet) }];
+                        if (!(sheetName in collection.sheets)) {
+                            collection.sheets[sheetName] = [{
+                                name: match,
+                                path: sheetPath,
+                                mod: modInfo?.id ?? ''
+                            }];
                         }
                         // does that sheet contain this sprite?
-                        else if (!database.sheets[sheet].some(spr => spr.name === match)) {
-                            database.sheets[sheet].push({ name: match, path: join(dir, sheet) });
+                        else if (!collection.sheets[sheetName].some(spr => spr.name === match)) {
+                            collection.sheets[sheetName].push({
+                                name: match,
+                                path: sheetPath,
+                                mod: modInfo?.id ?? ''
+                            });
                         }
                     }
                 });
@@ -77,193 +106,125 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
         }
 
         // find fonts
-        for (const font of files) {
-            if (font.endsWith('.fnt')) {
+        for (const fontPath of files) {
+            if (fontPath.endsWith('.fnt')) {
+                const fontName = removeQualityDecorators(basename(fontPath));
                 // has this font been added already?
-                if (!database.fonts.some(fnt => fnt.name === font)) {
-                    database.fonts.push({ name: font, path: join(dir, font) });
+                if (!collection.fonts.some(fnt => fnt.name === fontName)) {
+                    collection.fonts.push({
+                        name: fontName,
+                        path: fontPath,
+                        mod: modInfo?.id ?? ''
+                    });
                 }
             }
         }
 
         // find sprites
-        for (const file of files) {
-            if (file.endsWith('.png')) {
+        for (const filePath of files) {
+            if (filePath.endsWith('.png')) {
+                const fileName = removeQualityDecorators(basename(filePath));
                 // is this a spritesheet?
-                if (file.replace('.png', '.plist') in database.sheets) {
+                if (fileName.replace('.png', '.plist') in collection.sheets) {
                     continue;
                 }
                 // is this a font?
-                if (database.fonts.some(fnt => fnt.name === file.replace('.png', '.fnt'))) {
+                if (collection.fonts.some(fnt => fnt.name === fileName.replace('.png', '.fnt'))) {
                     continue;
                 }
                 // has this sprite been added already?
-                if (database.sprites.some(spr => spr.name === file)) {
+                if (collection.sprites.some(spr => spr.name === fileName)) {
                     continue;
                 }
-                database.sprites.push({ name: file, path: join(dir, file) });
+                collection.sprites.push({
+                    name: fileName,
+                    path: filePath,
+                    mod: modInfo?.id ?? ''
+                });
             }
         }
-    }
 
-    // remove "square.png" sheets
-    for (const key in database.sheets) {
-        if (database.sheets[key].length === 1 && database.sheets[key][0].name === 'square.png') {
-            delete database.sheets[key];
-        }
+        database.collections.push(collection);
     }
 
     // log findings
     channel?.appendLine(`done (found ${
-        database.sprites.length
-    } + ${
-        Object.values(database.sheets).reduce((a, v) => a + v.length, 0)
-    } + ${
-        database.fonts.length
+        database.getTotalCount()
     })`);
 }
 
+let database: SpriteDatabase = {
+    searchDirectories: [],
+    collections: [],
+    favorites: [],
+
+    getTotalCount() {
+        return database.collections.reduce((a, v) => {
+            return a +
+                v.sprites.length + 
+                v.fonts.length +
+                Object.values(v.sheets).reduce((a, b) => a + b.length, 0);
+        }, 0);
+    },
+
+    getFontCount() {
+        return database.collections.reduce((a, v) => a + v.fonts.length, 0);
+    },
+
+    getSheetCount() {
+        return database.collections.reduce(
+            (a, v) => a + Object.values(v.sheets).reduce((a, b) => a + b.length, 0),
+            0
+        );
+    },
+
+    getSpriteCount() {
+        return database.collections.reduce((a, v) => a + v.sprites.length, 0);
+    },
+
+    getAllInMod(id: string) {
+        const collection = database.collections.find(c => c.mod?.id === id);
+        if (!collection) {
+            return [];
+        }
+        return collection.sprites
+            .concat(Object.values(collection.sheets).flat())
+            .concat(collection.fonts);
+    },
+
+    getAll() {
+        return database.collections.flatMap(collection => 
+            collection.sprites
+                .concat(Object.values(collection.sheets).flat())
+                .concat(collection.fonts)
+        ).sort((a, b) => a.name.localeCompare(b.name));
+    },
+
+    getAllFonts() {
+        return database.collections.flatMap(collection => 
+            collection.fonts
+        ).sort((a, b) => a.name.localeCompare(b.name));
+    },
+
+    getAllSprites() {
+        return database.collections.flatMap(collection => 
+            collection.sprites
+        ).sort((a, b) => a.name.localeCompare(b.name));
+    },
+
+    getAllSheets() {
+        return database.collections.flatMap(collection => 
+            Object.values(collection.sheets).flat()
+        ).sort((a, b) => a.name.localeCompare(b.name));
+    },
+
+    getFavorites() {
+        return database.getAll().filter(
+            spr => database.favorites.some(f => f === spr.name)
+        );
+    }
+};
+
 export function getSpriteDatabase() {
     return database;
-}
-
-function buildDatabasePageHtml(panel: WebviewPanel, context: ExtensionContext) {
-    // read html file and replace static content
-    return readFileSync(join(context.extension.extensionPath, 'src/webview/database.html')).toString()
-        .replace('DATABASE_INFO',
-            `Sprites: ${
-                database.sprites.length
-            }, sheets: ${
-                Object.keys(database.sheets).length
-            }, fonts: ${
-                database.fonts.length
-            }, total: ${
-                database.total()
-            }`
-        ).replace('DATABASE_OPTIONS', 
-            `${
-                Object.keys(database.sheets).reduce((a, v) => {
-                    return a + `<option value="sheet:${v}">${v}</option>`;
-                }, "")
-            }`
-        ).replace('DATABASE_SCRIPT', panel.webview.asWebviewUri(Uri.file(join(
-            context.extension.extensionPath,
-            'out/webview/database.js'
-        ))).toString()).replace('DATABASE_CSS', panel.webview.asWebviewUri(Uri.file(join(
-            context.extension.extensionPath,
-            'src/webview/database.css'
-        ))).toString());
-}
-
-export function buildDatabasePanel(context: ExtensionContext) {
-    const panel = window.createWebviewPanel(
-        'gmdSpriteDatabase',
-        'Sprite Database',
-        ViewColumn.Beside,
-        {
-            enableScripts: true
-        }
-    );
-    panel.iconPath = {
-        light: Uri.file(join(context.extension.extensionPath, 'images/blockman-light.svg')),
-        dark:  Uri.file(join(context.extension.extensionPath, 'images/blockman-dark.svg'))
-    };
-    panel.webview.html = buildDatabasePageHtml(panel, context);
-    panel.webview.onDidReceiveMessage(
-        message => {
-            switch (message.command) {
-                case 'request-sheet': {
-                    panel.webview.postMessage({
-                        command: 'update',
-                        data: database.sheets[message.sheet]
-                    });
-                } break;
-
-                case 'request-sprites': {
-                    panel.webview.postMessage({
-                        command: 'update',
-                        data: database.sprites
-                    });
-                } break;
-
-                case 'request-fonts': {
-                    panel.webview.postMessage({
-                        command: 'update',
-                        data: database.fonts
-                    });
-                } break;
-
-                case 'request-all': {
-                    panel.webview.postMessage({
-                        command: 'update',
-                        data: database.all()
-                    });
-                } break;
-
-                case 'load-image': {
-                    if (message.sprite.path.endsWith('.plist')) {
-                        getSheetDatabase().loadSheet(message.sprite.path)
-                            .then(sheet => sheet.extract(message.sprite.name))
-                            .then(data => {
-                                panel.webview.postMessage({
-                                    command: 'image',
-                                    element: message.element,
-                                    data: data
-                                });
-                            })
-                            .catch(_ => {
-                                panel.webview.postMessage({
-                                    command: 'image',
-                                    element: message.element,
-                                    data: null
-                                });
-                            });
-                    } else {
-                        promises.readFile(message.sprite.path, { encoding: 'base64' })
-                            .then(data => {
-                                panel.webview.postMessage({
-                                    command: 'image',
-                                    element: message.element,
-                                    data: data.toString()
-                                });
-                            })
-                            .catch(_ => {
-                                panel.webview.postMessage({
-                                    command: 'image',
-                                    element: message.element,
-                                    data: null
-                                });
-                            });
-                    }
-                } break;
-
-                case 'load-font': {
-                    getBMFontDatabase().loadFont(message.path)
-                        .then(font => font.render(message.text))
-                        .then(data => {
-                            panel.webview.postMessage({
-                                command: 'font',
-                                element: message.element,
-                                data: data
-                            });
-                        })
-                        .catch(err => {
-                            console.log(`Error rendering font: ${err}`);
-                            panel.webview.postMessage({
-                                command: 'font',
-                                element: message.element,
-                                data: null
-                            });
-                        });
-                } break;
-
-                default: {
-                    console.log(`Unknown message.command: ${message.command}`);
-                } break;
-            }
-        },
-        undefined,
-        context.subscriptions
-    );
-    return panel;
 }

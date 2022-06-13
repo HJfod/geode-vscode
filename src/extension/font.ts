@@ -1,8 +1,7 @@
-import { readFileSync, promises, readFile } from 'fs';
-import { FontData, parseFnt } from './fnt';
+import { readFileSync } from 'fs';
+import { Char, FontData, parseFnt } from './fnt';
 import { dirname, join } from 'path';
 import * as sharp from 'sharp';
-import { RenderedChars } from '../types/font';
 
 export class BMFont {
     data: FontData;
@@ -22,22 +21,21 @@ export class BMFont {
     }
 
     async render(text: string) {
-        const res: RenderedChars = {
-            chars: [],
-            xoffset: 0,
-            base: 0,
-        };
+        interface RenderedChar {
+            data: Buffer,
+            c: Char,
+        }
+        
+        let totalWidth = 0;
+        let totalHeight = this.data.common.lineHeight + this.data.common.base;
+        const chars: RenderedChar[] = [];
         for (let ix = 0; ix < text.length; ix++) {
             const char = this.data.chars.find(ch => ch.id === text.charCodeAt(ix));
             if (char) {
-                const file = await promises.readFile(
+                const file = readFileSync(
                     join(dirname(this.path), this.data.pages[char.page])
                 );
-                if (ix === 0) {
-                    res.xoffset = char.xoffset;
-                    res.base = this.data.common.base;
-                }
-                res.chars.push({
+                chars.push({
                     data: await sharp(file)
                         .extract({
                             left: char.x,
@@ -45,17 +43,35 @@ export class BMFont {
                             width: char.width,
                             height: char.height
                         })
-                        .toBuffer()
-                        .then(b => b.toString('base64')),
-                    x: char.x,
-                    y: char.y,
-                    width: char.width,
-                    height: char.height,
-                    xadvance: char.xadvance
+                        .toBuffer(),
+                    c: char
                 });
+                totalWidth += char.xadvance;
             }
         }
-        return res;
+        let x = 0;
+        return await sharp(
+            Buffer.alloc(totalWidth * totalHeight * 4, 0x00000000),
+            {
+                raw: {
+                    width: totalWidth,
+                    height: totalHeight,
+                    channels: 4
+                }
+            }
+        )
+            .composite(chars.map(char => {
+                const res = {
+                    input: char.data,
+                    left: x + char.c.xoffset,
+                    top: char.c.yoffset + this.data.common.base
+                };
+                x += char.c.xadvance;
+                return res;
+            }))
+            .png()
+            .toBuffer()
+            .then(b => b.toString('base64'));
     }
 }
 

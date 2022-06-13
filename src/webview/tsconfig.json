@@ -6,7 +6,6 @@
             "dom",
             "es2020"
         ],
-		"outDir": "../../out/webview",
         "rootDirs": [ 
             ".",
             "../types"

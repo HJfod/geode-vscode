@@ -1,9 +1,11 @@
-import { window, commands, languages, ExtensionContext, CompletionItem, CompletionItemKind, DocumentHighlight } from 'vscode';
+import { window, commands, languages, ExtensionContext, CompletionItem, CompletionItemKind, workspace } from 'vscode';
 import { existsSync } from 'fs';
 import { execSync, spawn } from 'child_process';
 import { join } from 'path';
 import { getOptions, setupConfig, getWorkingInstallation, getConfig } from './config';
-import { buildDatabasePanel, getSpriteDatabase, refreshSpriteDatabase } from './sprite';
+import { getSpriteDatabase, refreshSpriteDatabase } from './sprite';
+import { loadData, saveData, setContext } from './save';
+import { buildDatabasePanel } from './database';
 
 function isSuiteInstalled(): boolean {
 	return existsSync(getOptions().geodeSuitePath ?? "");
@@ -14,12 +16,20 @@ function runCliCmd(cmd: string) {
 }
 
 export function activate(context: ExtensionContext) {
+	// save context to global variable
+	setContext(context);
+
+	// try to load save data
+	loadData();
+
 	console.log('Geode Support loaded :-)');
 
+	// load user variables
 	setupConfig();
 
 	console.log('Loaded config.json');
 
+	// check if Geode Suite is installed
 	if (!isSuiteInstalled()) {
 		window.showErrorMessage(
 			'Geode Suite path is not set! Please set ' +
@@ -29,6 +39,7 @@ export function activate(context: ExtensionContext) {
 	
 	console.log('Checked suite');
 
+	// create output window
 	const channel = window.createOutputChannel('Geode');
 
 	channel.appendLine(`Geode Suite location: ${getOptions().geodeSuitePath}`);
@@ -36,10 +47,12 @@ export function activate(context: ExtensionContext) {
 	
 	console.log('Refreshing sprite database');
 
+	// load sprites
 	refreshSpriteDatabase(channel);
 
 	console.log('Registering functions');
 
+	// register commands
 	context.subscriptions.push(commands.registerCommand('geode-support.launchGD', () => {
 		if (!isSuiteInstalled()) {
 			window.showErrorMessage(
@@ -92,6 +105,7 @@ export function activate(context: ExtensionContext) {
 		buildDatabasePanel(context);
 	}));
 
+	// register intellisense
 	context.subscriptions.push(languages.registerCompletionItemProvider(
 		{
 			scheme: "file",
@@ -99,15 +113,8 @@ export function activate(context: ExtensionContext) {
 		},
 		{
 			provideCompletionItems() {
-				return Object.keys(getSpriteDatabase().sheets).map(key => {
-					return getSpriteDatabase().sheets[key].map(spr => {
-						const item = new CompletionItem(spr.name, CompletionItemKind.Value);
-						item.detail = key;
-						return item;
-					});
-				}).flat().concat(getSpriteDatabase().sprites.map(spr => {
-					return new CompletionItem(spr.name, CompletionItemKind.Value);
-				}));
+				// todo
+				return [];
 			}
 		}
 	));
@@ -115,4 +122,6 @@ export function activate(context: ExtensionContext) {
 	console.log('Geode Support done :-)');
 }
 
-export function deactivate() {}
+export function deactivate() {
+	saveData();
+}

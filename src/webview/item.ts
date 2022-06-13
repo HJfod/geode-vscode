@@ -1,8 +1,7 @@
 
 import { Sprite } from '../types/sprite';
-import { RenderedChars } from '../types/font';
 
-function getFilename(path: string) {
+export function getFilename(path: string) {
     return path.replace(/^.*[\\\/]/, '');
 }
 
@@ -27,25 +26,36 @@ export enum ItemType {
     font,
 }
 
+export interface ItemOptions {
+    sprite: Sprite,
+    favorite: boolean,
+    onUse: (item: Item) => void,
+    onFavorite: (item: Item, val: boolean) => void,
+    onSheet: (item: Item) => void,
+    onInfo: (item: Item) => void,
+}
+
 export class Item {
     type: ItemType;
     sprite: Sprite;
     id: string;
     element: HTMLElement;
-    image: HTMLImageElement | HTMLCanvasElement | HTMLParagraphElement | null = null;
+    image: HTMLImageElement | HTMLParagraphElement | null = null;
     imageDiv: HTMLDivElement;
+    isFavorite: boolean;
 
-    constructor(spr: Sprite) {
-        if (spr.path.endsWith('.fnt')) {
+    constructor(options: ItemOptions) {
+        if (options.sprite.path.endsWith('.fnt')) {
             this.type = ItemType.font;
-        } else if (spr.path.endsWith('.plist')) {
+        } else if (options.sprite.path.endsWith('.plist')) {
             this.type = ItemType.sheetSprite;
         } else {
             this.type = ItemType.sprite;
         }
-        this.sprite = spr;
-        this.id = spr.name;
-        this.element = this.build();
+        this.sprite = options.sprite;
+        this.isFavorite = options.favorite;
+        this.id = options.sprite.name;
+        this.element = this.build(options);
         this.imageDiv = this.element.querySelector('#image-div') as HTMLDivElement;
     }
 
@@ -66,48 +76,15 @@ export class Item {
     }
 
     setImage(data: string) {
-        this.addImageType();
+        this.image?.remove();
+        this.image = document.createElement('img');
+        this.imageDiv.appendChild(this.image);
         if (data) {
             (this.image as HTMLImageElement).src = `data:image/png;base64,${data}`;
         } else {
             this.addFailedImage();
         }
         this.removeLoadingCircle();
-    }
-
-    renderFont(rendered: RenderedChars) {
-        if (!rendered) {
-            this.removeLoadingCircle();
-            this.addFailedImage();
-            return;
-        }
-        this.addImageType();
-
-        const canvas = this.image as HTMLCanvasElement;
-        const ctx = canvas.getContext('2d');
-        
-        canvas.width = 150;
-        canvas.height = 150;
-        
-        let posx = rendered.xoffset;
-        rendered.chars.forEach(char => {
-            const img = new Image(char.width, char.height);
-            img.src = `data:image/png;base64,${char.data}`;
-            ctx?.drawImage(img, posx, rendered.base);
-            posx += char.xadvance;
-        });
-
-        this.removeLoadingCircle();
-    }
-
-    private addImageType() {
-        this.image?.remove();
-        if (this.type === ItemType.font) {
-            this.image = document.createElement('canvas');
-        } else {
-            this.image = document.createElement('img');
-        }
-        this.imageDiv.appendChild(this.image);
     }
 
     private addFailedImage() {
@@ -138,20 +115,55 @@ export class Item {
         this.removeLoadingCircle();
     }
 
-    private build(): HTMLElement {
+    private build(options: ItemOptions): HTMLElement {
         const element = document.createElement('article');
         element.setAttribute('owner-item', this.id);
         element.innerHTML = `
             <div id="image-div"></div>
             <p>${this.sprite.name}</p>
-            ${this.sprite.path.endsWith('.plist') ? `
-                <p class="source">${getFilename(this.sprite.path)}</p>
-            ` : ''}
-            <div id="buttons">
-                <button>Use</button>
-                <button>★</button>
-            </div>
+            ${
+                this.type === ItemType.sheetSprite ?
+                `<a>${getFilename(this.sprite.path)}</a>` : ''
+            }
+            <div id="buttons"></div>
         `;
+
+        const useButton = document.createElement('button');
+        useButton.innerHTML = 'Use';
+        useButton.addEventListener('click', _ => options.onUse(this));
+        element.querySelector('#buttons')?.appendChild(useButton);
+
+        const starButton = document.createElement('button');
+        starButton.innerHTML = '★';
+        if (options.favorite) {
+            starButton.classList.add('favorite');
+        }
+        starButton.addEventListener('click', _ => {
+            this.isFavorite = !this.isFavorite;
+            if (this.isFavorite) {
+                starButton.classList.add('favorite');
+            } else {
+                starButton.classList.remove('favorite');
+            }
+            options.onFavorite(this, this.isFavorite);
+        });
+        element.querySelector('#buttons')?.appendChild(starButton);
+
+        if (this.type === ItemType.sheetSprite) {
+            const sheetLink = element.querySelector('a');
+            sheetLink?.addEventListener('click', _ => options.onSheet(this));
+        }
+
+        const hoverItem = document.createElement('div');
+        hoverItem.classList.add('hover-item');
+
+        const infoButton = document.createElement('button');
+        infoButton.innerHTML = 'Info';
+        infoButton.addEventListener('click', _ => options.onInfo(this));
+        hoverItem.appendChild(infoButton);
+
+        element.insertBefore(hoverItem, element.children[0]);
+
         return element;
     }
 }
@@ -159,8 +171,8 @@ export class Item {
 export class ItemDatabase {
     items: Item[] = [];
 
-    create(spr: Sprite) {
-        const item = new Item(spr);
+    create(options: ItemOptions) {
+        const item = new Item(options);
         this.items.push(item);
         return item;
     }
