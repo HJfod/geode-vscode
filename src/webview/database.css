@@ -141,14 +141,25 @@ article > #image-div {
     color: var(--vscode-symbolIcon-nullForeground);
 }
 
-article.hidden {
+#dropdown {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    background-color: var(--vscode-settings-dropdownBackground);
+}
+
+#dropdown.hidden {
+    display: none;
+}
+
+.hidden {
     display: none;
 }
 
 article > #buttons {
     display: grid;
     align-self: stretch;
-    grid-template-columns: 4fr 1fr;
+    grid-template-columns: 4fr 1fr 1fr;
     gap: 5px;
 }
 

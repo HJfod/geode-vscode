@@ -44,7 +44,7 @@
 		"keybindings": [
 			{
 				"command": "geode-support.browseSpriteDatabase",
-				"key": "Ctrl+Shift+J"
+				"key": "Ctrl+Alt+B"
 			}
 		],
 		"configuration": {

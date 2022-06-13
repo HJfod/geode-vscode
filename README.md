@@ -6,4 +6,4 @@ Geode extension for VS Code. So good it will make you kill your best friend and 
 
  - Launch GD
  - Auto-complete for sprite names (Press Ctrl + Space inside a string literal for a list)
- - Sprite browser (press Ctrl + Shift + J to open it)
+ - Sprite browser (press `Ctrl + Alt + B` to open it)

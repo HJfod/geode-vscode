@@ -3,6 +3,12 @@ import { Sprite } from '../types/sprite';
 import { SpriteDatabase } from '../types/SpriteDatabase';
 import { createLoadingCircle, getFilename, getItemDatabase, ItemType } from './item';
  
+const database = new SpriteDatabase;
+
+export function getSpriteDatabase() {
+    return database;
+}
+
 (function() {
 
     const vscode = acquireVsCodeApi();
@@ -10,8 +16,6 @@ import { createLoadingCircle, getFilename, getItemDatabase, ItemType } from './i
     const select = document.getElementById('select-source') as HTMLSelectElement;
     const search = document.getElementById('search') as HTMLInputElement;
     const searchCount = document.getElementById('search-count') as HTMLElement;
-
-    const database = new SpriteDatabase;
 
     // for performance, we only want to load 
     // sprites that are currently visible
@@ -52,6 +56,12 @@ import { createLoadingCircle, getFilename, getItemDatabase, ItemType } from './i
 
     search?.addEventListener('input', _ => {
         updateSearch();
+    });
+
+    document.addEventListener('click', _ => {
+        document.querySelectorAll('#dropdown').forEach(
+            dropdown => dropdown.classList.add('hidden')
+        );
     });
 
     function requestNewState() {
@@ -119,34 +129,12 @@ import { createLoadingCircle, getFilename, getItemDatabase, ItemType } from './i
             const item = getItemDatabase().create({
                 sprite: spr,
                 favorite: database.favorites.some(f => f === spr.name),
-                onUse: _ => {
-                    vscode.postMessage({
-                        command: 'use-value',
-                        value: item.sprite.name
-                    });
-                },
-                onFavorite: (_, fav) => {
-                    if (fav) {
-                        database.favorites.push(item.sprite.name);
-                    } else {
-                        database.favorites = database.favorites.filter(i => i !== item.sprite.name);
-                    }
-                    vscode.postMessage({
-                        command: 'set-favorite',
-                        name: item.sprite.name,
-                        favorite: fav
-                    });
-                },
-                onSheet: _ => {
-                    select.value = "sheet:" + getFilename(item.sprite.path);
-                    select.dispatchEvent(new Event('change'));
-                },
-                onInfo: _ => {
-                    vscode.postMessage({
-                        command: 'info',
-                        sprite: item.sprite
-                    });
-                },
+                // idk if this is unsafe
+                // the docs said to never pass vscode to global scope
+                // but since all the items are allocated inside this 
+                // globally scoped function, it shouldn't be passed 
+                // i think?
+                postMessage: vscode.postMessage,
             });
             observer.observe(item.element);
             content.appendChild(item.element);

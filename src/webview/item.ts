@@ -1,5 +1,7 @@
 
 import { Sprite } from '../types/sprite';
+import { SpriteDatabase } from './SpriteDatabase';
+import { getSpriteDatabase } from './database';
 
 export function getFilename(path: string) {
     return path.replace(/^.*[\\\/]/, '');
@@ -29,10 +31,7 @@ export enum ItemType {
 export interface ItemOptions {
     sprite: Sprite,
     favorite: boolean,
-    onUse: (item: Item) => void,
-    onFavorite: (item: Item, val: boolean) => void,
-    onSheet: (item: Item) => void,
-    onInfo: (item: Item) => void,
+    postMessage: (message: unknown) => void
 }
 
 export class Item {
@@ -126,12 +125,75 @@ export class Item {
                 `<a>${getFilename(this.sprite.path)}</a>` : ''
             }
             <div id="buttons"></div>
+            <div id="dropdown" class="hidden"></div>
         `;
 
         const useButton = document.createElement('button');
         useButton.innerHTML = 'Use';
-        useButton.addEventListener('click', _ => options.onUse(this));
+        useButton.addEventListener('click', _ => {
+            options.postMessage({
+                command: 'use-value',
+                value: this.sprite,
+                type: ''
+            });
+        });
         element.querySelector('#buttons')?.appendChild(useButton);
+
+        const dropdown = element.querySelector('#dropdown') as HTMLDivElement;
+
+        // todo: deal with fonts (have a Create CCLabel for them)
+        const dropdownItems = [
+            {
+                text: 'Create CCSprite',
+                callback: (_: MouseEvent) => {
+                    options.postMessage({
+                        command: 'use-value',
+                        value: this.sprite,
+                        type: 'CCSprite'
+                    });
+                }
+            },
+            {
+                text: 'Create button',
+                callback: (_: MouseEvent) => {
+                    options.postMessage({
+                        command: 'use-value',
+                        value: this.sprite,
+                        type: 'CCMenuItemSpriteExtra'
+                    });
+                }
+            }
+        ];
+
+        if (this.type === ItemType.sprite) {
+            dropdownItems.push({
+                text: 'Create button w/ ButtonSprite',
+                callback: (_: MouseEvent) => {
+                    options.postMessage({
+                        command: 'use-value',
+                        value: this.sprite,
+                        type: 'CCMenuItemSpriteExtra+ButtonSprite'
+                    });
+                }
+            });
+        }
+
+        for (const btn of dropdownItems) {
+            const dropdownBtn = document.createElement('button');
+            dropdownBtn.innerHTML = btn.text;
+            dropdownBtn.addEventListener('click', btn.callback);
+            dropdown.appendChild(dropdownBtn);
+        }
+
+        const otherUseButton = document.createElement('button');
+        otherUseButton.innerHTML = '...';
+        otherUseButton.addEventListener('click', e => {
+            dropdown.style.top = e.pageY + 'px';
+            dropdown.style.left = e.pageX + 'px';
+            dropdown.classList.remove('hidden');
+            e.stopPropagation();
+        });
+        element.querySelector('#buttons')?.appendChild(otherUseButton);
 
         const starButton = document.createElement('button');
         starButton.innerHTML = '★';
@@ -142,16 +204,28 @@ export class Item {
             this.isFavorite = !this.isFavorite;
             if (this.isFavorite) {
                 starButton.classList.add('favorite');
+                getSpriteDatabase().favorites.push(this.sprite.name);
             } else {
                 starButton.classList.remove('favorite');
+                getSpriteDatabase().favorites = getSpriteDatabase().favorites.filter(
+                    i => i !== this.sprite.name
+                );
             }
-            options.onFavorite(this, this.isFavorite);
+            options.postMessage({
+                command: 'set-favorite',
+                name: this.sprite.name,
+                favorite: this.isFavorite
+            });
         });
         element.querySelector('#buttons')?.appendChild(starButton);
 
         if (this.type === ItemType.sheetSprite) {
             const sheetLink = element.querySelector('a');
-            sheetLink?.addEventListener('click', _ => options.onSheet(this));
+            sheetLink?.addEventListener('click', _ => {
+                const select = document.getElementById('select-source') as HTMLSelectElement;
+                select.value = "sheet:" + getFilename(this.sprite.path);
+                select.dispatchEvent(new Event('change'));
+            });
         }
 
         const hoverItem = document.createElement('div');
@@ -159,7 +233,12 @@ export class Item {
 
         const infoButton = document.createElement('button');
         infoButton.innerHTML = 'Info';
-        infoButton.addEventListener('click', _ => options.onInfo(this));
+        infoButton.addEventListener('click', _ => {
+            options.postMessage({
+                command: 'info',
+                sprite: this.sprite
+            });
+        });
         hoverItem.appendChild(infoButton);
 
         element.insertBefore(hoverItem, element.children[0]);

@@ -4,6 +4,7 @@ import { ExtensionContext, Position, Uri, ViewColumn, WebviewPanel, window } fro
 import { getOptions } from "./config";
 import { getBMFontDatabase } from "./font";
 import { getSheetDatabase } from "./sheet";
+import { createCCMenuItemSpriteExtra, createCCMISEithBS, createCCSprite, insertSpriteName } from "./snippet";
 import { getSpriteDatabase } from "./sprite";
 
 function buildDatabasePageHtml(panel: WebviewPanel, context: ExtensionContext) {
@@ -148,12 +149,23 @@ export function buildDatabasePanel(context: ExtensionContext) {
 
                 case 'use-value': {
                     if (targetEditor && window.visibleTextEditors.some(e => e === targetEditor)) {
-                        targetEditor.edit(builder => {
-                            builder.insert(
-                                targetEditor?.selection.active as Position,
-                                message.value
-                            );
-                        });
+                        switch (message.type) {
+                            case 'CCSprite': {
+                                createCCSprite(targetEditor, message.value);
+                            } break;
+
+                            case 'CCMenuItemSpriteExtra': {
+                                createCCMenuItemSpriteExtra(targetEditor, message.value);
+                            } break;
+
+                            case 'CCMenuItemSpriteExtra+ButtonSprite': {
+                                createCCMISEithBS(targetEditor, message.value);
+                            } break;
+
+                            default: {
+                                insertSpriteName(targetEditor, message.value);
+                            } break;
+                        }
                         panel.dispose();
                     } else {
                         window.showErrorMessage(
