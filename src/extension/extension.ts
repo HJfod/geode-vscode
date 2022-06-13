@@ -2,8 +2,8 @@ import { window, commands, languages, ExtensionContext, CompletionItem, Completi
 import { existsSync } from 'fs';
 import { execSync, spawn } from 'child_process';
 import { join } from 'path';
-import { getOptions, setupConfig, getWorkingInstallation, getConfig } from './utils/config';
-import { buildDatabasePanel, getSpriteDatabase, refreshSpriteDatabase } from './utils/sprite';
+import { getOptions, setupConfig, getWorkingInstallation, getConfig } from './config';
+import { buildDatabasePanel, getSpriteDatabase, refreshSpriteDatabase } from './sprite';
 
 function isSuiteInstalled(): boolean {
 	return existsSync(getOptions().geodeSuitePath ?? "");

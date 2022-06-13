@@ -1,0 +1,178 @@
+
+:root {
+    --item-width:   150px;
+    --item-height:  200px;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: 1px solid -webkit-focus-ring-color;
+    outline-offset: -1px
+}
+
+input {
+    height: 17px;
+    padding: 6px;
+    border: solid 1px;
+    font-size: 13px;
+    font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+    color: var(--vscode-settings-textInputForeground);
+    background: var(--vscode-settings-textInputBackground);
+    border: 1px solid var(--vscode-settings-textInputBorder);
+}
+
+input[type="search"] {
+    height: 27px;
+}
+
+textarea {
+    white-space: nowrap;
+    padding: 4px, 4px;
+    font-size: 13px;
+    font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+    color: var(--vscode-settings-textInputForeground);
+    background: var(--vscode-settings-textInputBackground);
+    border: 1px solid var(--vscode-settings-textInputBorder);
+}
+
+button {
+    color: var(--vscode-button-foreground);
+    background-color: var(--vscode-button-background);
+    border: solid 1px var(--vscode-contrastBorder);
+    padding: 6px 14px;
+}
+
+button:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+button:focus {
+    outline: 1px solid -webkit-focus-ring-color;
+    outline-offset: 2px
+}
+
+button:active {
+    outline: none;
+}
+
+select {
+    width: 300px;
+    height: 27px;
+    font-size: 13px;
+    font-family:sans-serif;
+    color: var(--vscode-settings-dropdownForeground);
+    background: var(--vscode-settings-dropdownBackground);
+    border: 1px solid var(--vscode-settings-dropdownBorder);
+}
+
+hr {
+    opacity: 20%
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    height: 100%;
+}
+
+main {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, var(--item-width));
+    grid-auto-rows: var(--item-height);
+    overflow: auto;
+    align-self: strech;
+    align-items: center;
+}
+
+article {
+    padding: .5rem;
+    display: flex;
+    flex-direction: column;
+    width: var(--item-width);
+    height: var(--item-height);
+    transition-duration: .5s;
+    align-items: center;
+}
+
+article:nth-child(2n) {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+article p {
+    word-break: break-all;
+    max-width: var(--item-width);
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+article p.source {
+    font-style: italic;
+    opacity: 25%;
+    font-size: 0.8em;
+}
+
+article > #image-div {
+    min-height: 0;
+    flex-grow: 1;
+    align-self: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#image-div > * {
+    min-height: 0;
+}
+
+#image-div > p {
+    opacity: 50%;
+    font-weight: bold;
+    color: var(--vscode-symbolIcon-nullForeground);
+}
+
+article.hidden {
+    display: none;
+}
+
+article > #buttons {
+    display: grid;
+    align-self: stretch;
+    grid-template-columns: 4fr 1fr;
+    gap: 5px;
+}
+
+article > #buttons > button:not(:first-child) {
+    padding: 0px;
+}
+
+.side-by-side {
+    display: flex;
+}
+
+.side-by-side div {
+    margin-right: 30px;
+}
+
+.loading-circle {
+    display: block;
+    border: 0.4rem solid var(--vscode-settings-textInputBackground);
+    border-radius: 50%;
+    border-top: 0.4rem solid var(--vscode-settings-textInputForeground);
+    width: 2rem;
+    height: 2rem;
+    animation: spin 2s linear infinite;
+    align-self: center;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

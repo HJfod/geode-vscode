@@ -1,22 +1,8 @@
-import { readFileSync, promises, readFile } from "fs";
-import { FontData, parseFnt } from "./fnt";
-import sharp = require('sharp');
-import { dirname, join } from "path";
-
-export interface RenderedChar {
-    data: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    xadvance: number,
-}
-
-export interface RenderedChars {
-    chars: RenderedChar[],
-    xoffset: number,
-    base: number,
-};
+import { readFileSync, promises, readFile } from 'fs';
+import { FontData, parseFnt } from './fnt';
+import { dirname, join } from 'path';
+import * as sharp from 'sharp';
+import { RenderedChars } from '../types/font';
 
 export class BMFont {
     data: FontData;

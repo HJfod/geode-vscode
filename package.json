@@ -24,7 +24,7 @@
 		"onCommand:geode-support.browseSpriteDatabase",
 		"onLanguage:cpp"
 	],
-	"main": "./out/extension.js",
+	"main": "./out/extension/extension.js",
 	"contributes": {
 		"commands": [
 			{
@@ -71,8 +71,9 @@
 	"icon": "images/geode-circle-no-gradient.png",
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
+		"compile": "tsc -p ./src/extension & webpack --config ./src/webview/webpack.config.js --mode production",
+		"watch-ext": "tsc -watch -p ./src/extension",
+		"watch-wv": "webpack watch --config ./src/webview/webpack.config.js --mode development",
 		"pretest": "npm run compile && npm run lint",
 		"lint": "eslint src --ext ts",
 		"test": "node ./out/test/runTest.js"
@@ -81,6 +82,7 @@
 		"@types/glob": "^7.2.0",
 		"@types/mocha": "^9.1.1",
 		"@types/node": "16.x",
+		"@types/plist": "^3.0.2",
 		"@types/sharp": "^0.30.4",
 		"@types/vscode": "^1.68.0",
 		"@types/vscode-webview": "^1.57.0",
@@ -90,10 +92,14 @@
 		"eslint": "^8.16.0",
 		"glob": "^8.0.3",
 		"mocha": "^10.0.0",
-		"typescript": "^4.7.2"
+		"ts-loader": "^9.3.0",
+		"typescript": "^4.7.2",
+		"webpack": "^5.73.0",
+		"webpack-cli": "^4.10.0"
 	},
 	"dependencies": {
 		"parse-bmfont-ascii": "^1.0.6",
+		"plist": "^3.0.5",
 		"sharp": "^0.30.6",
 		"typescript-json-serializer": "^4.2.0"
 	}

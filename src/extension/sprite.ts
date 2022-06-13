@@ -1,29 +1,10 @@
 import { getOptions, getWorkingInstallation } from './config';
 import { join } from 'path';
-import { readdirSync, readFileSync, promises } from 'fs';
+import { readdirSync, readFileSync, promises, existsSync } from 'fs';
 import { window, OutputChannel, ViewColumn, Uri, ExtensionContext, WebviewPanel } from 'vscode';
 import { getBMFontDatabase } from './font';
-
-export interface Sprite {
-    name: string; // name.png
-    path: string; // path to .png in the case of 
-                  // standalone and .plist in the 
-                  // case of sheet
-}
-
-export interface Font {
-    name: string; // name.fnt
-    path: string; // path to name.fnt
-}
-
-export interface SpriteDatabase {
-    searchDirectories: string[];
-    sheets: { [name: string]: Sprite[] };
-    sprites: Sprite[];
-    fonts: Font[];
-    total(): number;
-    all(): Sprite[];
-}
+import { SpriteDatabase } from '../types/sprite';
+import { getSheetDatabase } from './sheet';
 
 function removeQualityDecorators(file: string) {
     return file.replace(/-uhd|-hd/g, '');
@@ -72,17 +53,24 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
         // find spritesheets
         for (const sheet of files) {
             if (sheet.endsWith('.plist')) {
+                // check if this is a spritesheet (does it have a corresponding .png file)
+                if (!existsSync(join(dir, sheet.replace('.plist', '.png')))) {
+                    continue;
+                }
+
                 // read sheet data and find all *.png strings inside
                 readFileSync(join(dir, sheet)).toString().match(/\w+\.png/g)?.forEach(match => {
                     match = removeQualityDecorators(match);
-
-                    // has a sheet with this name already been found?
-                    if (!(sheet in database.sheets)) {
-                        database.sheets[sheet] = [{ name: match, path: join(dir, sheet) }];
-                    }
-                    // does that sheet contain this sprite?
-                    else if (!database.sheets[sheet].some(spr => spr.name === match)) {
-                        database.sheets[sheet].push({ name: match, path: join(dir, sheet) });
+                    // check that this is not the same as the sheet (metadata field)
+                    if (match.replace('.png', '.plist') !== sheet) {
+                        // has a sheet with this name already been found?
+                        if (!(sheet in database.sheets)) {
+                            database.sheets[sheet] = [{ name: match, path: join(dir, sheet) }];
+                        }
+                        // does that sheet contain this sprite?
+                        else if (!database.sheets[sheet].some(spr => spr.name === match)) {
+                            database.sheets[sheet].push({ name: match, path: join(dir, sheet) });
+                        }
                     }
                 });
             }
@@ -161,6 +149,9 @@ function buildDatabasePageHtml(panel: WebviewPanel, context: ExtensionContext) {
         ).replace('DATABASE_SCRIPT', panel.webview.asWebviewUri(Uri.file(join(
             context.extension.extensionPath,
             'out/webview/database.js'
+        ))).toString()).replace('DATABASE_CSS', panel.webview.asWebviewUri(Uri.file(join(
+            context.extension.extensionPath,
+            'src/webview/database.css'
         ))).toString());
 }
 
@@ -210,14 +201,25 @@ export function buildDatabasePanel(context: ExtensionContext) {
                 } break;
 
                 case 'load-image': {
-                    if (message.path.endsWith('.plist')) {
-                        panel.webview.postMessage({
-                            command: 'image',
-                            element: message.element,
-                            data: ""
-                        });
+                    if (message.sprite.path.endsWith('.plist')) {
+                        getSheetDatabase().loadSheet(message.sprite.path)
+                            .then(sheet => sheet.extract(message.sprite.name))
+                            .then(data => {
+                                panel.webview.postMessage({
+                                    command: 'image',
+                                    element: message.element,
+                                    data: data
+                                });
+                            })
+                            .catch(_ => {
+                                panel.webview.postMessage({
+                                    command: 'image',
+                                    element: message.element,
+                                    data: null
+                                });
+                            });
                     } else {
-                        promises.readFile(message.path, { encoding: 'base64' })
+                        promises.readFile(message.sprite.path, { encoding: 'base64' })
                             .then(data => {
                                 panel.webview.postMessage({
                                     command: 'image',

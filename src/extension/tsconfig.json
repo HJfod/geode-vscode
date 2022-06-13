@@ -1,0 +1,18 @@
+
+{
+    "extends": "../types/tsconfig",
+    "compilerOptions": {
+		"module": "commonjs",
+        "moduleResolution": "node",
+        "lib": [
+            "es2020"
+        ],
+		"outDir": "../../out/extension",
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+        "rootDirs": [
+            ".",
+            "../types"
+        ]
+    }
+}

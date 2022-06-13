@@ -1,0 +1,15 @@
+{
+    "extends": "../types/tsconfig",
+    "compilerOptions": {
+        "module": "es2015",
+        "lib": [
+            "dom",
+            "es2020"
+        ],
+		"outDir": "../../out/webview",
+        "rootDirs": [ 
+            ".",
+            "../types"
+        ],
+    }
+}
