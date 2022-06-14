@@ -3,9 +3,10 @@ import { existsSync } from 'fs';
 import { execSync, spawn } from 'child_process';
 import { join } from 'path';
 import { getOptions, setupConfig, getWorkingInstallation, getConfig } from './config';
-import { getSpriteDatabase, refreshSpriteDatabase } from './sprite';
+import { refreshSpriteDatabase } from './database/SpriteDatabase';
 import { loadData, saveData, setContext } from './save';
-import { buildDatabasePanel } from './database';
+import { buildDatabasePanel } from './database/databaseWebView';
+import { createClassWalkthrough } from './snippet';
 
 function isSuiteInstalled(): boolean {
 	return existsSync(getOptions().geodeSuitePath ?? "");
@@ -103,6 +104,10 @@ export function activate(context: ExtensionContext) {
 
 	context.subscriptions.push(commands.registerCommand('geode-support.browseSpriteDatabase', () => {
 		buildDatabasePanel(context);
+	}));
+
+	context.subscriptions.push(commands.registerCommand('geode-support.createClass', () => {
+		createClassWalkthrough();
 	}));
 
 	// register intellisense

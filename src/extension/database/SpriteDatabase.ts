@@ -1,9 +1,9 @@
-import { getOptions, getWorkingInstallation } from './config';
+import { getOptions, getWorkingInstallation } from '../config';
 import { basename, join } from 'path';
 import { readdirSync, readFileSync,  existsSync } from 'fs';
-import { OutputChannel, workspace } from 'vscode';
-import { SpriteCollection, ModJson } from '../types/sprite';
-import { SpriteDatabase } from '../types/SpriteDatabase';
+import { OutputChannel, window, workspace, WorkspaceFolder } from 'vscode';
+import { SpriteCollection, ModJson } from '../sprite';
+import { SpriteDatabase } from '@shared/SpriteDatabase';
 
 function removeQualityDecorators(file: string) {
     return file.replace(/-uhd|-hd/g, '');

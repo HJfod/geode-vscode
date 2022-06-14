@@ -1,11 +1,11 @@
 import { promises, readFileSync } from "fs";
 import { dirname, join } from "path";
 import { ExtensionContext, Position, Uri, ViewColumn, WebviewPanel, window } from "vscode";
-import { getOptions } from "./config";
-import { getBMFontDatabase } from "./font";
-import { getSheetDatabase } from "./sheet";
-import { createCCMenuItemSpriteExtra, createCCMISEithBS, createCCSprite, insertSpriteName } from "./snippet";
-import { getSpriteDatabase } from "./sprite";
+import { getOptions } from "../config";
+import { getBMFontDatabase } from "./BMFontDatabase";
+import { getSheetDatabase } from "./SheetDatabase";
+import { createCCMenuItemSpriteExtra, createCCMISEithBS, createCCSprite, insertSpriteName } from "../snippet";
+import { getSpriteDatabase } from "./SpriteDatabase";
 
 function buildDatabasePageHtml(panel: WebviewPanel, context: ExtensionContext) {
     // read html file and replace static content

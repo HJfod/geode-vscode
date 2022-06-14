@@ -22,6 +22,7 @@
 		"onCommand:geode-support.launchGD",
 		"onCommand:geode-support.selectInstallation",
 		"onCommand:geode-support.browseSpriteDatabase",
+		"onCommand:geode-support.createClass",
 		"onLanguage:cpp"
 	],
 	"main": "./out/extension/extension.js",
@@ -39,6 +40,10 @@
 				"command": "geode-support.browseSpriteDatabase",
 				"title": "Geode: Browse Sprite Database",
 				"enablement": "!editorReadonly"
+			},
+			{
+				"command": "geode-support.createClass",
+				"title": "Geode: New Class (Header & Source)"
 			}
 		],
 		"keybindings": [
@@ -85,6 +90,7 @@
 	},
 	"devDependencies": {
 		"@types/glob": "^7.2.0",
+		"@types/lodash": "^4.14.182",
 		"@types/mocha": "^9.1.1",
 		"@types/node": "16.x",
 		"@types/plist": "^3.0.2",
@@ -103,6 +109,7 @@
 		"webpack-cli": "^4.10.0"
 	},
 	"dependencies": {
+		"lodash": "^4.17.21",
 		"open-file-explorer": "^1.0.2",
 		"parse-bmfont-ascii": "^1.0.6",
 		"plist": "^3.0.5",

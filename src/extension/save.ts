@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { ExtensionContext, window } from "vscode";
-import { getSpriteDatabase } from "./sprite";
+import { getSpriteDatabase } from "./database/SpriteDatabase";
 
 let extension: ExtensionContext;
 

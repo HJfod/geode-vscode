@@ -7,6 +7,9 @@
         "lib": [
             "es2020"
         ],
+        "paths": {
+            "@shared/*": ["../types/*"]
+        },
 		"outDir": "../../out",
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true,
