@@ -1,20 +1,13 @@
-import { window, commands, languages, ExtensionContext, CompletionItem, CompletionItemKind, workspace } from 'vscode';
-import { existsSync } from 'fs';
-import { execSync, spawn } from 'child_process';
+import { window, commands, languages, ExtensionContext } from 'vscode';
+import { spawn } from 'child_process';
 import { join } from 'path';
-import { getOptions, setupConfig, getWorkingInstallation, getConfig } from './config';
+import { getOptions } from './options';
+import { setupConfig, getWorkingInstallation, getConfig } from './geode/geode';
 import { refreshSpriteDatabase } from './database/SpriteDatabase';
 import { loadData, saveData, setContext } from './save';
 import { buildDatabasePanel } from './database/databaseWebView';
-import { createClassWalkthrough } from './snippet';
-
-function isSuiteInstalled(): boolean {
-	return existsSync(getOptions().geodeSuitePath ?? "");
-}
-
-function runCliCmd(cmd: string) {
-	return execSync(`${getOptions().geodeSuitePath}/../bin/geode.exe ${cmd}`).toString();
-}
+import { createClassWalkthrough } from './source/snippet';
+import { isSuiteInstalled, runCliCmd } from './geode/geode';
 
 export function activate(context: ExtensionContext) {
 	// save context to global variable

@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "fs";
 import lodash = require("lodash");
 import { dirname, join } from "path";
 import { SnippetString, TextEditor, ViewColumn, window, workspace, WorkspaceFolder } from "vscode";
-import { Sprite } from "../types/sprite";
+import { Sprite } from "../sprite";
 
 // class for placeholders in snippets
 class Placeholder {
@@ -121,9 +121,9 @@ interface DefaultClassSnippet {
 
 interface DefaultClassSnippets {
     /* eslint-disable */
-    'CustomListView': DefaultClassSnippet,
     'CCNode': DefaultClassSnippet,
     'CCLayer': DefaultClassSnippet,
+    'CustomListView': DefaultClassSnippet,
     'FLAlertLayer': DefaultClassSnippet,
     'Other': DefaultClassSnippet,
     /* eslint-enable */
@@ -131,185 +131,6 @@ interface DefaultClassSnippets {
 
 const defaultClassSnippets: DefaultClassSnippets = {
     /* eslint-disable */
-    'CustomListView': {
-        defaultName: 'MyListView',
-        nameSuffix: 'ListView',
-        header: options => {
-            const listName = `${options.className}ListView`;
-            const cellName = `${options.className}Cell`;
-            let objName = `${options.listDataType}`;
-
-            let res = `class ${listName};` + '\n\n';
-
-            let dataName = lodash.upperFirst(
-                objName.match(/((?<=::)([a-z]|[0-9])+|([A-Z]([a-z]|[0-9])+))/)?.at(0) ?? 'Data'
-            );
-            let dataVarName = lodash.lowerFirst(dataName);
-            
-            if (!options.listDataTypeIsCCObject) {
-                objName = `${options.className}Object`;
-                const ref = options.listDataType?.endsWith('*') ? '' : ' const&';
-                res += alignAndTrim(`
-                struct ${options.dllExportMacro}${objName} : public cocos2d::CCObject {
-                    ${options.listDataType} m_data;
-                    inline ${objName}(${options.listDataType}${ref} data) {
-                        m_data = data;
-                        this->autorelease();
-                    }
-                };
-                `) + '\n\n';
-            }
-
-            return res + alignAndTrim(`
-
-            class ${options.dllExportMacro}${cellName} : public TableViewCell {
-            protected:
-                ${listName}* m_list;
-                cocos2d::CCMenu* m_menu;
-
-                ${cellName}(const char* name, cocos2d::CCSize const& size);
-
-                bool init(${listName}* list);
-                void draw() override;
-            
-            public:
-                void updateBGColor(int index);
-                void loadFrom${dataName}(${objName}* ${dataVarName});
-
-                static ${cellName}* create(${listName}* list, const char* key, cocos2d::CCSize size);
-            };
-
-            class ${options.dllExportMacro}${listName} : public CustomListView {
-            protected:
-                void setupList() override;
-                TableViewCell* getListCell(const char* key) override;
-                void loadCell(TableViewCell* cell, unsigned int index) override;
-            
-            public:
-                static ${listName}* create(
-                    cocos2d::CCArray* ${dataVarName}s,
-                    float width = 358.f,
-                    float height = 220.f
-                );
-            };
-
-            `);
-        },
-        source: options => {
-            const listName = `${options.className}ListView`;
-            const cellName = `${options.className}Cell`;
-            let objName = `${options.listDataType}`;
-
-            let dataName = lodash.upperFirst(
-                objName.match(/((?<=::)([a-z]|[0-9])+|([A-Z]([a-z]|[0-9])+))/)?.at(0) ?? 'Data'
-            );
-            let dataVarName = lodash.lowerFirst(dataName);
-
-            if (!options.listDataTypeIsCCObject) {
-                objName = `${options.className}Object`;
-            }
-
-            return alignAndTrim(`
-
-            ${cellName}::${cellName}(const char* name, CCSize const& size) :
-                TableViewCell(name, size.width, size.height) {}
-
-            void ${cellName}::draw() {
-                reinterpret_cast<StatsCell*>(this)->StatsCell::draw();
-            }
-
-            void ${cellName}::updateBGColor(int index) {
-                if (index & 1) m_backgroundLayer->setColor(ccc3(0xc2, 0x72, 0x3e));
-                else m_backgroundLayer->setColor(ccc3(0xa1, 0x58, 0x2c));
-                m_backgroundLayer->setOpacity(255);
-            }
-
-            bool ${cellName}::init(${listName}* list) {
-                m_list = list;
-                return true;
-            }
-
-            void ${cellName}::loadFrom${dataName}(${objName}* ${dataVarName}) {
-                m_mainLayer->setVisible(true);
-                m_backgroundLayer->setOpacity(255);
-                                
-                m_menu = CCMenu::create();
-                m_menu->setPosition(m_height / 2, m_height / 2);
-                m_mainLayer->addChild(m_menu);
-
-                // cell ui code here
-            }
-
-            ${cellName}* ${cellName}::create(
-                ${listName}* list, const char* key, CCSize size
-            ) {
-                auto pRet = new ${cellName}(key, size);
-                if (pRet && pRet->init(list)) {
-                    return pRet;
-                }
-                CC_SAFE_DELETE(pRet);
-                return nullptr;
-            }
-
-            void ${listName}::setupList() {
-                // set item size
-                m_itemSeparation = 40.0f;
-                
-                // load data
-                if (!m_entries->count()) return;
-                m_tableView->reloadData();
-
-                // fix content layer content size so the 
-                // list is properly aligned to the top
-                auto coverage = calculateChildCoverage(m_tableView->m_contentLayer);
-                m_tableView->m_contentLayer->setContentSize({
-                    -coverage.origin.x + coverage.size.width,
-                    -coverage.origin.y + coverage.size.height
-                });
-                
-                // align list to the top
-                if (m_entries->count() == 1) {
-                    m_tableView->moveToTopWithOffset(m_itemSeparation * 2);
-                } else if (m_entries->count() == 2) {
-                    m_tableView->moveToTopWithOffset(-m_itemSeparation);
-                } else {
-                    m_tableView->moveToTop();
-                }
-            }
-
-            TableViewCell* ${listName}::getListCell(const char* key) {
-                return ${cellName}::create(this, key, { m_width, m_itemSeparation });
-            }
-
-            void ${listName}::loadCell(TableViewCell* cell, unsigned int index) {
-                as<${cellName}*>(cell)->loadFrom${dataName}(
-                    as<${objName}*>(m_entries->objectAtIndex(index))
-                );
-                as<${cellName}*>(cell)->updateBGColor(index);
-            }
-
-            ${listName}* ${listName}::create(
-                CCArray* ${dataVarName}s,
-                float width,
-                float height
-            ) {
-                auto ret = new ${listName};
-                if (ret && ret->init(
-                    ${dataVarName}s,
-                    BoomListType::Default,
-                    width,
-                    height
-                )) {
-                    ret->autorelease();
-                    return ret;
-                }
-                CC_SAFE_DELETE(ret);
-                return nullptr;
-            }
-
-            `);
-        },
-    },
     'CCNode': {
         defaultName: 'MyNode',
         header: options => alignAndTrim(`
@@ -380,6 +201,193 @@ const defaultClassSnippets: DefaultClassSnippets = {
         }
 
         `),
+    },
+    'CustomListView': {
+        defaultName: 'MyListView',
+        nameSuffix: 'ListView',
+        header: options => {
+            const listName = `${options.className}ListView`;
+            const cellName = `${options.className}Cell`;
+            let objName = options.listDataType;
+
+            let res = `class ${listName};` + '\n\n';
+
+            let dataName = lodash.upperFirst(
+                objName?.match(/((?<=::)([a-z]|[0-9])+|([A-Z]([a-z]|[0-9])+))/)?.at(0) ?? 'Data'
+            );
+            let dataVarName = lodash.lowerFirst(dataName);
+            
+            if (!options.listDataTypeIsCCObject) {
+                objName = `${options.className}Object`;
+                const ref = options.listDataType?.endsWith('*') ? '' : ' const&';
+                res += alignAndTrim(`
+                struct ${options.dllExportMacro}${objName} : public cocos2d::CCObject {
+                    ${options.listDataType} m_data;
+                    inline ${objName}(${options.listDataType}${ref} data) {
+                        m_data = data;
+                        this->autorelease();
+                    }
+                };
+                `) + '\n\n';
+            }
+
+            if (!objName?.endsWith('*')) {
+                objName += '*';
+            }
+
+            return res + alignAndTrim(`
+
+            class ${options.dllExportMacro}${cellName} : public TableViewCell {
+            protected:
+                ${listName}* m_list;
+                cocos2d::CCMenu* m_menu;
+
+                ${cellName}(const char* name, cocos2d::CCSize const& size);
+
+                bool init(${listName}* list);
+                void draw() override;
+            
+            public:
+                void updateBGColor(int index);
+                void loadFrom${dataName}(${objName} ${dataVarName});
+
+                static ${cellName}* create(${listName}* list, const char* key, cocos2d::CCSize size);
+            };
+
+            class ${options.dllExportMacro}${listName} : public CustomListView {
+            protected:
+                void setupList() override;
+                TableViewCell* getListCell(const char* key) override;
+                void loadCell(TableViewCell* cell, unsigned int index) override;
+            
+            public:
+                static ${listName}* create(
+                    cocos2d::CCArray* ${dataVarName}s,
+                    float width = 358.f,
+                    float height = 220.f
+                );
+            };
+
+            `);
+        },
+        source: options => {
+            const listName = `${options.className}ListView`;
+            const cellName = `${options.className}Cell`;
+            let objName = options.listDataType;
+
+            let dataName = lodash.upperFirst(
+                objName?.match(/((?<=::)([a-z]|[0-9])+|([A-Z]([a-z]|[0-9])+))/)?.at(0) ?? 'Data'
+            );
+            let dataVarName = lodash.lowerFirst(dataName);
+
+            if (!options.listDataTypeIsCCObject) {
+                objName = `${options.className}Object`;
+            }
+
+            if (!objName?.endsWith('*')) {
+                objName += '*';
+            }
+
+            return alignAndTrim(`
+
+            ${cellName}::${cellName}(const char* name, CCSize const& size) :
+                TableViewCell(name, size.width, size.height) {}
+
+            void ${cellName}::draw() {
+                reinterpret_cast<StatsCell*>(this)->StatsCell::draw();
+            }
+
+            void ${cellName}::updateBGColor(int index) {
+                if (index & 1) m_backgroundLayer->setColor(ccc3(0xc2, 0x72, 0x3e));
+                else m_backgroundLayer->setColor(ccc3(0xa1, 0x58, 0x2c));
+                m_backgroundLayer->setOpacity(255);
+            }
+
+            bool ${cellName}::init(${listName}* list) {
+                m_list = list;
+                return true;
+            }
+
+            void ${cellName}::loadFrom${dataName}(${objName} ${dataVarName}) {
+                m_mainLayer->setVisible(true);
+                m_backgroundLayer->setOpacity(255);
+                                
+                m_menu = CCMenu::create();
+                m_menu->setPosition(m_height / 2, m_height / 2);
+                m_mainLayer->addChild(m_menu);
+
+                // cell ui code here
+            }
+
+            ${cellName} ${cellName}::create(
+                ${listName}* list, const char* key, CCSize size
+            ) {
+                auto pRet = new ${cellName}(key, size);
+                if (pRet && pRet->init(list)) {
+                    return pRet;
+                }
+                CC_SAFE_DELETE(pRet);
+                return nullptr;
+            }
+
+            void ${listName}::setupList() {
+                // set item size
+                m_itemSeparation = 40.0f;
+                
+                // load data
+                if (!m_entries->count()) return;
+                m_tableView->reloadData();
+
+                // fix content layer content size so the 
+                // list is properly aligned to the top
+                auto coverage = calculateChildCoverage(m_tableView->m_contentLayer);
+                m_tableView->m_contentLayer->setContentSize({
+                    -coverage.origin.x + coverage.size.width,
+                    -coverage.origin.y + coverage.size.height
+                });
+                
+                // align list to the top
+                if (m_entries->count() == 1) {
+                    m_tableView->moveToTopWithOffset(m_itemSeparation * 2);
+                } else if (m_entries->count() == 2) {
+                    m_tableView->moveToTopWithOffset(-m_itemSeparation);
+                } else {
+                    m_tableView->moveToTop();
+                }
+            }
+
+            TableViewCell* ${listName}::getListCell(const char* key) {
+                return ${cellName}::create(this, key, { m_width, m_itemSeparation });
+            }
+
+            void ${listName}::loadCell(TableViewCell* cell, unsigned int index) {
+                as<${cellName}*>(cell)->loadFrom${dataName}(
+                    as<${objName}>(m_entries->objectAtIndex(index))
+                );
+                as<${cellName}*>(cell)->updateBGColor(index);
+            }
+
+            ${listName}* ${listName}::create(
+                CCArray* ${dataVarName}s,
+                float width,
+                float height
+            ) {
+                auto ret = new ${listName};
+                if (ret && ret->init(
+                    ${dataVarName}s,
+                    BoomListType::Default,
+                    width,
+                    height
+                )) {
+                    ret->autorelease();
+                    return ret;
+                }
+                CC_SAFE_DELETE(ret);
+                return nullptr;
+            }
+
+            `);
+        },
     },
     'FLAlertLayer': {
         defaultName: 'MyPopup',

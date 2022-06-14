@@ -1,10 +1,10 @@
 import { promises, readFileSync } from "fs";
 import { dirname, join } from "path";
-import { ExtensionContext, Position, Uri, ViewColumn, WebviewPanel, window } from "vscode";
-import { getOptions } from "../config";
+import { ExtensionContext, Uri, ViewColumn, WebviewPanel, window } from "vscode";
+import { getOptions } from "../options";
 import { getBMFontDatabase } from "./BMFontDatabase";
 import { getSheetDatabase } from "./SheetDatabase";
-import { createCCMenuItemSpriteExtra, createCCMISEithBS, createCCSprite, insertSpriteName } from "../snippet";
+import { createCCMenuItemSpriteExtra, createCCMISEithBS, createCCSprite, insertSpriteName } from "../source/snippet";
 import { getSpriteDatabase } from "./SpriteDatabase";
 
 function buildDatabasePageHtml(panel: WebviewPanel, context: ExtensionContext) {

@@ -8,7 +8,7 @@
             "es2020"
         ],
         "paths": {
-            "@shared/*": ["../types/*"]
+            "@shared/*": ["../types/*"],
         },
 		"outDir": "../../out",
 		"experimentalDecorators": true,

@@ -46,6 +46,19 @@
 				"title": "Geode: New Class (Header & Source)"
 			}
 		],
+		"menus": {
+			"file/newFile": [
+				{
+					"command": "geode-support.createClass"
+				}
+			],
+			"explorer/context": [
+				{
+					"command": "geode-support.createClass",
+					"group": ""
+				}
+			]
+		},
 		"keybindings": [
 			{
 				"command": "geode-support.browseSpriteDatabase",
