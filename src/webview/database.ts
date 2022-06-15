@@ -2,6 +2,7 @@
 import { Sprite } from '../types/sprite';
 import { SpriteDatabase } from '../types/SpriteDatabase';
 import { createLoadingCircle, getFilename, getItemDatabase, ItemType } from './item';
+import "./database.scss";
  
 const database = new SpriteDatabase;
 
@@ -9,7 +10,11 @@ export function getSpriteDatabase() {
 	return database;
 }
 
-(function() {
+// so for some reason InlineChunkHtmlPlugin in webpack 
+// doesn't add `defer`... but also conveniently i already 
+// have everything wrapped in a function anyway so just 
+// do this lol
+document.addEventListener("DOMContentLoaded", function() {
 
 	const vscode = acquireVsCodeApi();
 	const content = document.querySelector('main') as HTMLElement;
@@ -172,4 +177,4 @@ export function getSpriteDatabase() {
 	// focus search input for mouseless computing
 	search.focus();
 
-}());
+});

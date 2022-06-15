@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { Char, FontData, parseFnt } from './fnt';
 import { dirname, join } from 'path';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 
 export class BMFont {
     data: FontData;

@@ -6,10 +6,11 @@ import { getBMFontDatabase } from "./BMFontDatabase";
 import { getSheetDatabase } from "./SheetDatabase";
 import { createCCMenuItemSpriteExtra, createCCMISEithBS, createCCSprite, insertSpriteName } from "../source/snippet";
 import { getSpriteDatabase } from "./SpriteDatabase";
+import openExplorer from 'open-file-explorer';
 
-function buildDatabasePageHtml(panel: WebviewPanel, context: ExtensionContext) {
+function buildDatabasePageHtml(context: ExtensionContext) {
     // read html file and replace static content
-    return readFileSync(join(context.extension.extensionPath, 'src/webview/database.html')).toString()
+    return readFileSync(join(context.extension.extensionPath, 'out/webview/database.html')).toString()
         .replace('DATABASE_INFO',
             `Sprites: ${
                 getSpriteDatabase().getSpriteCount()
@@ -37,15 +38,7 @@ function buildDatabasePageHtml(panel: WebviewPanel, context: ExtensionContext) {
                     );
                 }, '')
             }`
-        )
-        .replace('DATABASE_SCRIPT', panel.webview.asWebviewUri(Uri.file(join(
-            context.extension.extensionPath,
-            'out/webview/database.js'
-        ))).toString())
-        .replace('DATABASE_CSS', panel.webview.asWebviewUri(Uri.file(join(
-            context.extension.extensionPath,
-            'src/webview/database.css'
-        ))).toString());
+        );
 }
 
 export function buildDatabasePanel(context: ExtensionContext) {
@@ -68,7 +61,7 @@ export function buildDatabasePanel(context: ExtensionContext) {
         light: Uri.file(join(context.extension.extensionPath, 'images/blockman-light.svg')),
         dark:  Uri.file(join(context.extension.extensionPath, 'images/blockman-dark.svg'))
     };
-    panel.webview.html = buildDatabasePageHtml(panel, context);
+    panel.webview.html = buildDatabasePageHtml(context);
     panel.webview.onDidReceiveMessage( 
         message => {
             switch (message.command) {

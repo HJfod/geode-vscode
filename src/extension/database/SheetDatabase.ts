@@ -1,7 +1,7 @@
 
 import { readFileSync } from 'fs';
 import { parse, PlistValue, PlistObject } from 'plist';
-import sharp = require('sharp');
+import sharp from 'sharp';
 
 interface SpriteFrame {
     aliases: string[],

@@ -2,7 +2,7 @@ import { getOptions } from '../options';
 import { getWorkingInstallation } from '../geode/geode';
 import { basename, join } from 'path';
 import { readdirSync, readFileSync,  existsSync } from 'fs';
-import { OutputChannel, window, workspace, WorkspaceFolder } from 'vscode';
+import { OutputChannel, workspace } from 'vscode';
 import { SpriteCollection, ModJson } from '../sprite';
 import { SpriteDatabase } from '@shared/SpriteDatabase';
 
