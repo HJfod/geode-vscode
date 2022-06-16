@@ -16,7 +16,7 @@ module.exports = (_, argv) => {
                 path.join(__dirname, "../../out/webview")
         },
         resolve: {
-            extensions: [ ".ts", ".sass", ".scss", ".html" ]
+            extensions: [ ".d.ts", ".ts", ".sass", ".scss", ".html" ]
         },
         module: {
             rules: [

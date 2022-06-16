@@ -1,10 +1,9 @@
 
-import { Sprite } from '../types/sprite';
-import { SpriteDatabase } from './SpriteDatabase';
-import { getSpriteDatabase } from './database';
+import { Item, ItemType } from '../types/types';
+import { getFavorites, removeFavorite } from './database';
 
 export function getFilename(path: string) {
-    return path.replace(/^.*[\\\/]/, '');
+    return path.replace(/^.*[\\\/]/, '').replace(/-hd|-uhd/g, '');
 }
 
 function filterSearch(name: string, query: string) {
@@ -22,38 +21,26 @@ export function createLoadingCircle(parent: Element | null) {
     return null;
 }
 
-export enum ItemType {
-    sprite,
-    sheetSprite,
-    font,
-}
-
 export interface ItemOptions {
-    sprite: Sprite,
+    item: Item,
     favorite: boolean,
     postMessage: (message: unknown) => void
 }
 
-export class Item {
-    type: ItemType;
-    sprite: Sprite;
+export class ItemModel {
+    item: Item;
     id: string;
     element: HTMLElement;
     image: HTMLImageElement | HTMLParagraphElement | null = null;
     imageDiv: HTMLDivElement;
     isFavorite: boolean;
+    options: ItemOptions;
 
     constructor(options: ItemOptions) {
-        if (options.sprite.path.endsWith('.fnt')) {
-            this.type = ItemType.font;
-        } else if (options.sprite.path.endsWith('.plist')) {
-            this.type = ItemType.sheetSprite;
-        } else {
-            this.type = ItemType.sprite;
-        }
-        this.sprite = options.sprite;
+        this.options = options;
+        this.item = options.item;
         this.isFavorite = options.favorite;
-        this.id = options.sprite.name;
+        this.id = options.item.name;
         this.element = this.build(options);
         this.imageDiv = this.element.querySelector('#image-div') as HTMLDivElement;
     }
@@ -66,9 +53,9 @@ export class Item {
         }
     }
 
-    becameVisible(visible: boolean, fetchFunc: (item: Item) => void) {
+    becameVisible(visible: boolean) {
         if (visible) {
-            this.fetchImage(fetchFunc);
+            this.fetchImage();
         } else {
             this.becameHidden();
         }
@@ -104,9 +91,37 @@ export class Item {
         this.imageDiv.querySelector('.loading-circle')?.remove();
     }
 
-    private fetchImage(fetchFunc: (item: Item) => void) {
+    private fetchImage() {
         this.addLoadingCircle();
-        fetchFunc(this);
+        switch (this.item.type) {
+            case ItemType.font: {
+                this.options.postMessage({
+                    command: 'load-font',
+                    path: this.item.path,
+                    element: this.id,
+                    text: "Abc123"
+                });
+            } break;
+
+            case ItemType.sheetSprite: case ItemType.sprite: {
+                this.options.postMessage({
+                    command: 'load-image',
+                    sprite: this.item,
+                    element: this.id,
+                });
+            } break;
+
+            case ItemType.audio: {
+                this.options.postMessage({
+                    command: 'load-audio',
+                    element: this.id,
+                });
+            } break;
+
+            default: {
+                this.setImage('');
+            } break;
+        }
     }
 
     private becameHidden() {
@@ -119,10 +134,10 @@ export class Item {
         element.setAttribute('owner-item', this.id);
         element.innerHTML = `
             <div id="image-div"></div>
-            <p>${this.sprite.name}</p>
+            <p>${this.item.name}</p>
             ${
-                this.type === ItemType.sheetSprite ?
-                `<a>${getFilename(this.sprite.path)}</a>` : ''
+                this.item.type === ItemType.sheetSprite ?
+                `<a>${getFilename(this.item.path)}</a>` : ''
             }
             <div id="buttons"></div>
             <div id="dropdown" class="hidden"></div>
@@ -133,7 +148,7 @@ export class Item {
         useButton.addEventListener('click', _ => {
             options.postMessage({
                 command: 'use-value',
-                value: this.sprite,
+                value: this.item,
                 type: ''
             });
         });
@@ -148,7 +163,7 @@ export class Item {
                 callback: (_: MouseEvent) => {
                     options.postMessage({
                         command: 'use-value',
-                        value: this.sprite,
+                        value: this.item,
                         type: 'CCSprite'
                     });
                 }
@@ -158,20 +173,20 @@ export class Item {
                 callback: (_: MouseEvent) => {
                     options.postMessage({
                         command: 'use-value',
-                        value: this.sprite,
+                        value: this.item,
                         type: 'CCMenuItemSpriteExtra'
                     });
                 }
             }
         ];
 
-        if (this.type === ItemType.sprite) {
+        if (this.item.type === ItemType.sprite) {
             dropdownItems.push({
                 text: 'Create button w/ ButtonSprite',
                 callback: (_: MouseEvent) => {
                     options.postMessage({
                         command: 'use-value',
-                        value: this.sprite,
+                        value: this.item,
                         type: 'CCMenuItemSpriteExtra+ButtonSprite'
                     });
                 }
@@ -204,26 +219,24 @@ export class Item {
             this.isFavorite = !this.isFavorite;
             if (this.isFavorite) {
                 starButton.classList.add('favorite');
-                getSpriteDatabase().favorites.push(this.sprite.name);
+                getFavorites().push(this.item.name);
             } else {
                 starButton.classList.remove('favorite');
-                getSpriteDatabase().favorites = getSpriteDatabase().favorites.filter(
-                    i => i !== this.sprite.name
-                );
+                removeFavorite(this.item.name);
             }
             options.postMessage({
                 command: 'set-favorite',
-                name: this.sprite.name,
+                name: this.item.name,
                 favorite: this.isFavorite
             });
         });
         element.querySelector('#buttons')?.appendChild(starButton);
 
-        if (this.type === ItemType.sheetSprite) {
+        if (this.item.type === ItemType.sheetSprite) {
             const sheetLink = element.querySelector('a');
             sheetLink?.addEventListener('click', _ => {
                 const select = document.getElementById('select-source') as HTMLSelectElement;
-                select.value = "sheet:" + getFilename(this.sprite.path);
+                select.value = `sheet::${this.item.owner.directory}::${getFilename(this.item.path)}`;
                 select.dispatchEvent(new Event('change'));
             });
         }
@@ -236,7 +249,7 @@ export class Item {
         infoButton.addEventListener('click', _ => {
             options.postMessage({
                 command: 'info',
-                sprite: this.sprite
+                item: this.item
             });
         });
         hoverItem.appendChild(infoButton);
@@ -248,10 +261,10 @@ export class Item {
 }
 
 export class ItemDatabase {
-    items: Item[] = [];
+    items: ItemModel[] = [];
 
     create(options: ItemOptions) {
-        const item = new Item(options);
+        const item = new ItemModel(options);
         this.items.push(item);
         return item;
     }
@@ -268,7 +281,7 @@ export class ItemDatabase {
     showByQuery(query: string): number {
         let show = 0;
         this.items.forEach(item => {
-            if (filterSearch(item.sprite.name, query)) {
+            if (filterSearch(item.item.name, query)) {
                 item.show(true);
                 show++;
             } else {

@@ -1,9 +1,11 @@
 # Geode Support for VS Code
 
-Geode extension for VS Code. So good it will make you kill your best friend and fuck his sister once you try it out
+[Geode](https://github.com/geode-sdk) extension for VS Code. Adds a bunch of convenience utilities for working with GD mods.
+
+#### Make sure to have Geode CLI & Geode Suite installed to use.
 
 ## Features
 
- - Launch GD
  - Sprite browser (press `Ctrl + Alt + B` to open it)
- - Create class helper
+ - Automatic class creation helper
+ - Launch GD

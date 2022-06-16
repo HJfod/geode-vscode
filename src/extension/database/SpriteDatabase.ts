@@ -1,10 +1,10 @@
 import { getOptions } from '../options';
-import { getWorkingInstallation } from '../geode/geode';
+import { geode } from '../geode/geode';
 import { basename, join } from 'path';
 import { readdirSync, readFileSync,  existsSync } from 'fs';
 import { OutputChannel, workspace } from 'vscode';
-import { SpriteCollection, ModJson } from '../sprite';
-import { SpriteDatabase } from '@shared/SpriteDatabase';
+import { SpriteCollection, modjson, ItemType } from '../../types/types';
+import { SpriteDatabase } from '../../types/SpriteDatabase';
 
 function removeQualityDecorators(file: string) {
     return file.replace(/-uhd|-hd/g, '');
@@ -24,11 +24,11 @@ function readdirRecursiveSync(dir: string) {
     return res;
 }
 
-export function getModInDir(dir: string): ModJson | null {
+export function getModInDir(dir: string): modjson.Mod | null {
     if (existsSync(join(dir, 'mod.json'))) {
         const modJson = JSON.parse(
             readFileSync(join(dir, 'mod.json')).toString()
-        ) as ModJson;
+        ) as modjson.Mod;
         return modJson;
     }
     return null;
@@ -39,7 +39,7 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
 
     // set search directories
     database.searchDirectories = [
-        join(getWorkingInstallation()?.path ?? "", 'Resources'),
+        join(geode.getWorkingInstallation()?.path ?? "", 'Resources'),
         ...getOptions().spriteSearchDirectories
     ];
 
@@ -63,11 +63,14 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
         const modInfo = getModInDir(dir);
 
         const collection: SpriteCollection = {
-            directory: dir,
-            mod: modInfo,
+            owner: {
+                directory: dir,
+                mod: modInfo,
+            },
             sheets: {},
             fonts: [],
             sprites: [],
+            audio: [],
         };
 
         // find spritesheets
@@ -88,17 +91,19 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
                         // has a sheet with this name already been found?
                         if (!(sheetName in collection.sheets)) {
                             collection.sheets[sheetName] = [{
+                                type: ItemType.sheetSprite,
                                 name: match,
                                 path: sheetPath,
-                                mod: modInfo?.id ?? ''
+                                owner: collection.owner,
                             }];
                         }
                         // does that sheet contain this sprite?
                         else if (!collection.sheets[sheetName].some(spr => spr.name === match)) {
                             collection.sheets[sheetName].push({
+                                type: ItemType.sheetSprite,
                                 name: match,
                                 path: sheetPath,
-                                mod: modInfo?.id ?? ''
+                                owner: collection.owner,
                             });
                         }
                     }
@@ -113,9 +118,26 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
                 // has this font been added already?
                 if (!collection.fonts.some(fnt => fnt.name === fontName)) {
                     collection.fonts.push({
+                        type: ItemType.font,
                         name: fontName,
                         path: fontPath,
-                        mod: modInfo?.id ?? ''
+                        owner: collection.owner,
+                    });
+                }
+            }
+        }
+
+        // find songs
+        for (const audioPath of files) {
+            if (audioPath.endsWith('.ogg')) {
+                const audioName = removeQualityDecorators(basename(audioPath));
+                // has this font been added already?
+                if (!collection.audio.some(a => a.name === audioName)) {
+                    collection.audio.push({
+                        type: ItemType.audio,
+                        name: audioName,
+                        path: audioPath,
+                        owner: collection.owner,
                     });
                 }
             }
@@ -138,9 +160,10 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
                     continue;
                 }
                 collection.sprites.push({
+                    type: ItemType.sprite,
                     name: fileName,
                     path: filePath,
-                    mod: modInfo?.id ?? ''
+                    owner: collection.owner,
                 });
             }
         }
@@ -154,77 +177,7 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
     })`);
 }
 
-let database: SpriteDatabase = {
-    searchDirectories: [],
-    collections: [],
-    favorites: [],
-
-    getTotalCount() {
-        return database.collections.reduce((a, v) => {
-            return a +
-                v.sprites.length + 
-                v.fonts.length +
-                Object.values(v.sheets).reduce((a, b) => a + b.length, 0);
-        }, 0);
-    },
-
-    getFontCount() {
-        return database.collections.reduce((a, v) => a + v.fonts.length, 0);
-    },
-
-    getSheetCount() {
-        return database.collections.reduce(
-            (a, v) => a + Object.values(v.sheets).reduce((a, b) => a + b.length, 0),
-            0
-        );
-    },
-
-    getSpriteCount() {
-        return database.collections.reduce((a, v) => a + v.sprites.length, 0);
-    },
-
-    getAllInMod(id: string) {
-        const collection = database.collections.find(c => c.mod?.id === id);
-        if (!collection) {
-            return [];
-        }
-        return collection.sprites
-            .concat(Object.values(collection.sheets).flat())
-            .concat(collection.fonts);
-    },
-
-    getAll() {
-        return database.collections.flatMap(collection => 
-            collection.sprites
-                .concat(Object.values(collection.sheets).flat())
-                .concat(collection.fonts)
-        ).sort((a, b) => a.name.localeCompare(b.name));
-    },
-
-    getAllFonts() {
-        return database.collections.flatMap(collection => 
-            collection.fonts
-        ).sort((a, b) => a.name.localeCompare(b.name));
-    },
-
-    getAllSprites() {
-        return database.collections.flatMap(collection => 
-            collection.sprites
-        ).sort((a, b) => a.name.localeCompare(b.name));
-    },
-
-    getAllSheets() {
-        return database.collections.flatMap(collection => 
-            Object.values(collection.sheets).flat()
-        ).sort((a, b) => a.name.localeCompare(b.name));
-    },
-
-    getFavorites() {
-        return database.getAll().filter(
-            spr => database.favorites.some(f => f === spr.name)
-        );
-    }
-};
+const database = new SpriteDatabase;
 
 export function getSpriteDatabase() {
     return database;

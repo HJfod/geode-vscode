@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "fs";
 import lodash = require("lodash");
 import { dirname, join } from "path";
 import { SnippetString, TextEditor, ViewColumn, window, workspace, WorkspaceFolder } from "vscode";
-import { Sprite } from "../sprite";
+import { Item } from "../types";
 
 // class for placeholders in snippets
 class Placeholder {
@@ -15,13 +15,13 @@ class Placeholder {
 }
 
 // get string literal value for sprite
-function getLiteral(value: Sprite) {
+function getLiteral(value: Item) {
     // todo: check if id is from mod in current workspace or external
-    return `"${value.name}"${value.mod ? '_spr' : ''}`;
+    return `"${value.name}"${value.owner.mod ? '_spr' : ''}`;
 }
 
 // make Placeholder variable name for sprite
-function makeVar(value: Sprite, index: number | undefined = undefined) {
+function makeVar(value: Item, index: number | undefined = undefined) {
     const val = value.name.replace('.png', '').replace(/\w+?_/, '').replace(/_\w+/g, '');
     return new Placeholder(val.charAt(0).toLowerCase() + val.substring(1), index);
 }
@@ -65,14 +65,14 @@ function snippet(strs: TemplateStringsArray, ...fmts: SnippetInsert[]) {
     return snippet;
 }
 
-export function createCCSprite(editor: TextEditor, value: Sprite) {
+export function createCCSprite(editor: TextEditor, value: Item) {
     const fun = value.path.endsWith('.plist') ? 'createWithSpriteFrameName' : 'create';
     editor.insertSnippet(
         snippet`auto ${makeVar(value)} = CCSprite::${fun}(${getLiteral(value)});`
     );
 }
 
-export function createCCMenuItemSpriteExtra(editor: TextEditor, value: Sprite) {
+export function createCCMenuItemSpriteExtra(editor: TextEditor, value: Item) {
     const fun = value.path.endsWith('.plist') ? 'createWithSpriteFrameName' : 'create';
     editor.insertSnippet(snippet`
         auto ${makeVar(value, 1)}Spr = CCSprite::${fun}(${getLiteral(value)});
@@ -83,7 +83,7 @@ export function createCCMenuItemSpriteExtra(editor: TextEditor, value: Sprite) {
     `);
 }
 
-export function createCCMISEithBS(editor: TextEditor, value: Sprite) {
+export function createCCMISEithBS(editor: TextEditor, value: Item) {
     editor.insertSnippet(snippet`
         auto ${makeVar(value, 1)}Spr = ButtonSprite::create(
             "${new Placeholder('Hi mom', 2)}", "bigFont.fnt", ${getLiteral(value)}
@@ -95,7 +95,7 @@ export function createCCMISEithBS(editor: TextEditor, value: Sprite) {
     `);
 }
 
-export function insertSpriteName(editor: TextEditor, value: Sprite) {
+export function insertSpriteName(editor: TextEditor, value: Item) {
     editor.insertSnippet(new SnippetString(getLiteral(value)));
 }
 

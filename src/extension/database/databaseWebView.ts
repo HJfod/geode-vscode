@@ -1,12 +1,13 @@
 import { promises, readFileSync } from "fs";
 import { dirname, join } from "path";
-import { ExtensionContext, Uri, ViewColumn, WebviewPanel, window } from "vscode";
+import { ColorThemeKind, ExtensionContext, Uri, ViewColumn, WebviewPanel, window } from "vscode";
 import { getOptions } from "../options";
 import { getBMFontDatabase } from "./BMFontDatabase";
 import { getSheetDatabase } from "./SheetDatabase";
 import { createCCMenuItemSpriteExtra, createCCMISEithBS, createCCSprite, insertSpriteName } from "../source/snippet";
 import { getSpriteDatabase } from "./SpriteDatabase";
 import openExplorer from 'open-file-explorer';
+import { Item } from "@shared/types";
 
 function buildDatabasePageHtml(context: ExtensionContext) {
     // read html file and replace static content
@@ -18,6 +19,8 @@ function buildDatabasePageHtml(context: ExtensionContext) {
                 getSpriteDatabase().getSheetCount()
             }, fonts: ${
                 getSpriteDatabase().getFontCount()
+            }, audio: ${
+                getSpriteDatabase().getAudioCount()
             }, total: ${
                 getSpriteDatabase().getTotalCount()
             }`
@@ -25,15 +28,15 @@ function buildDatabasePageHtml(context: ExtensionContext) {
         .replace('DATABASE_OPTIONS', 
             `${
                 getSpriteDatabase().collections.reduce((a, v) => {
-                    if (v.mod) {
-                        return a + `<option value="mod::${v.mod.id}">${v.mod.name}</option>`;
+                    if (v.owner.mod) {
+                        return a + `<option value="mod::${v.owner.mod.id}">${v.owner.mod.name}</option>`;
                     } else {
-                        return a;
+                        return a + `<option value="dir::${v.owner.directory}">${v.owner.directory}</option>`;
                     }
                 }, '') +
                 getSpriteDatabase().collections.reduce((a, v) => {
                     return a + Object.keys(v.sheets).reduce(
-                        (sa, sv) => sa + `<option value="sheet::${v.directory}::${sv}">${sv}</option>`,
+                        (sa, sv) => sa + `<option value="sheet::${v.owner.directory}::${sv}">${sv}</option>`,
                         ''
                     );
                 }, '')
@@ -68,11 +71,81 @@ export function buildDatabasePanel(context: ExtensionContext) {
                 case 'get-database': {
                     panel.webview.postMessage({
                         command: 'database',
-                        database: getSpriteDatabase(),
+                        favorites: getSpriteDatabase().favorites,
                         default: 
                             getOptions().databaseShowFavoritesByDefault &&
                             getSpriteDatabase().favorites.length ? 'favorites' : 'all'
                     });
+                } break;
+
+                case 'get-items': {
+                    switch (message.parts[0]) {
+                        case 'all': {
+                            panel.webview.postMessage({
+                                command: 'items',
+                                items: getSpriteDatabase().getAll(),
+                            });
+                        } break;
+
+                        case 'favorites': {
+                            panel.webview.postMessage({
+                                command: 'items',
+                                items: getSpriteDatabase().getFavorites(),
+                            });
+                        } break;
+
+                        case 'fonts': {
+                            panel.webview.postMessage({
+                                command: 'items',
+                                items: getSpriteDatabase().getAllFonts(),
+                            });
+                        } break;
+
+                        case 'audio': {
+                            panel.webview.postMessage({
+                                command: 'items',
+                                items: getSpriteDatabase().getAllAudio(),
+                            });
+                        } break;
+
+                        case 'sheets': {
+                            panel.webview.postMessage({
+                                command: 'items',
+                                items: getSpriteDatabase().getAllSheets(),
+                            });
+                        } break;
+
+                        case 'sprites': {
+                            panel.webview.postMessage({
+                                command: 'items',
+                                items: getSpriteDatabase().getAllSprites(),
+                            });
+                        } break;
+                    
+                        case 'mod': {
+                            panel.webview.postMessage({
+                                command: 'items',
+                                items: getSpriteDatabase().getAllInMod(message.parts[1]),
+                            });
+                        } break;
+
+                        case 'dir': {
+                            panel.webview.postMessage({
+                                command: 'items',
+                                items: getSpriteDatabase().getAllInDir(message.parts[1]),
+                            });
+                        } break;
+
+                        case 'sheet': {
+                            const collection = getSpriteDatabase().collections.find(c => c.owner.directory === message.parts[1]);
+                            panel.webview.postMessage({
+                                command: 'items',
+                                items: collection ?
+                                    collection.sheets[message.parts[2]] : 
+                                    [],
+                            });
+                        } break;
+                    }
                 } break;
 
                 case 'set-favorite': {
@@ -118,6 +191,27 @@ export function buildDatabasePanel(context: ExtensionContext) {
                                 });
                             });
                     }
+                } break;
+
+                case 'load-audio': {
+                    const path = window.activeColorTheme.kind === ColorThemeKind.Dark ?
+                        join(context.extension.extensionPath, 'images/audio-dark.png') :
+                        join(context.extension.extensionPath, 'images/audio-light.png');
+                    promises.readFile(path, { encoding: 'base64' })
+                        .then(data => {
+                            panel.webview.postMessage({
+                                command: 'image',
+                                element: message.element,
+                                data: data.toString()
+                            });
+                        })
+                        .catch(_ => {
+                            panel.webview.postMessage({
+                                command: 'image',
+                                element: message.element,
+                                data: null
+                            });
+                        });
                 } break;
 
                 case 'load-font': {
@@ -169,8 +263,17 @@ export function buildDatabasePanel(context: ExtensionContext) {
                 } break;
 
                 case 'info': {
+                    const item = message.item as Item;
                     window.showInformationMessage(
-                        `Name: ${message.sprite.name}\nPath: ${message.sprite.path}\nMod: ${message.sprite.mod}`,
+                        `Name: ${
+                            item.name
+                        }\nType: ${
+                            item.type
+                        }\nDirectory: ${
+                            item.owner.directory
+                        }\nMod: ${
+                            item.owner.mod?.name ?? '<none>'
+                        }`,
                         {
                             modal: true
                         },

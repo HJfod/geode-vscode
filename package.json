@@ -2,7 +2,7 @@
 	"name": "geode-support",
 	"displayName": "Geode Support",
 	"description": "Support for the Geode modding framework",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"engines": {
 		"vscode": "^1.68.0"
 	},
@@ -20,6 +20,7 @@
 	],
 	"activationEvents": [
 		"onCommand:geode-support.launchGD",
+		"onCommand:geode-support.buildAndLaunch",
 		"onCommand:geode-support.selectInstallation",
 		"onCommand:geode-support.browseSpriteDatabase",
 		"onCommand:geode-support.createClass",
@@ -28,6 +29,10 @@
 	"main": "out/extension/extension.js",
 	"contributes": {
 		"commands": [
+			{
+				"command": "geode-support.buildAndLaunch",
+				"title": "Geode: Build Mod & Launch GD"
+			},
 			{
 				"command": "geode-support.launchGD",
 				"title": "Geode: Launch Geometry Dash"
@@ -135,6 +140,7 @@
 		"open-file-explorer": "^1.0.2",
 		"parse-bmfont-ascii": "^1.0.6",
 		"plist": "^3.0.5",
+		"ps-node": "^0.1.6",
 		"sharp": "^0.30.6",
 		"typescript-json-serializer": "^4.2.0"
 	}

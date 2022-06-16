@@ -1,5 +1,5 @@
 
-import { SpriteCollection } from "./sprite";
+import { SpriteCollection } from "./types";
 
 export class SpriteDatabase {
     searchDirectories: string[] = [];
@@ -11,6 +11,7 @@ export class SpriteDatabase {
             return a +
                 v.sprites.length + 
                 v.fonts.length +
+                v.audio.length +
                 Object.values(v.sheets).reduce((a, b) => a + b.length, 0);
         }, 0);
     }
@@ -30,14 +31,32 @@ export class SpriteDatabase {
         return this.collections.reduce((a, v) => a + v.sprites.length, 0);
     }
 
+    getAudioCount() {
+        return this.collections.reduce((a, v) => a + v.audio.length, 0);
+    }
+
     getAllInMod(id: string) {
-        const collection = this.collections.find(c => c.mod?.id === id);
+        const collection = this.collections.find(c => c.owner.mod?.id === id);
         if (!collection) {
             return [];
         }
         return collection.sprites
             .concat(Object.values(collection.sheets).flat())
-            .concat(collection.fonts);
+            .concat(collection.fonts)
+            .concat(collection.audio)
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    getAllInDir(dir: string) {
+        const collection = this.collections.find(c => c.owner.directory === dir);
+        if (!collection) {
+            return [];
+        }
+        return collection.sprites
+            .concat(Object.values(collection.sheets).flat())
+            .concat(collection.fonts)
+            .concat(collection.audio)
+            .sort((a, b) => a.name.localeCompare(b.name));
     }
 
     getAll() {
@@ -45,6 +64,7 @@ export class SpriteDatabase {
             collection.sprites
                 .concat(Object.values(collection.sheets).flat())
                 .concat(collection.fonts)
+                .concat(collection.audio)
         ).sort((a, b) => a.name.localeCompare(b.name));
     }
 
@@ -63,6 +83,12 @@ export class SpriteDatabase {
     getAllSheets() {
         return this.collections.flatMap(collection => 
             Object.values(collection.sheets).flat()
+        ).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    getAllAudio() {
+        return this.collections.flatMap(collection => 
+            collection.audio
         ).sort((a, b) => a.name.localeCompare(b.name));
     }
 
