@@ -38,7 +38,7 @@ export class PickList {
         let got: MetaItem[] = [];
         for (const data of this.data) {
             for (const [sheet, sprites] of Object.entries(data.sheets)) {
-                if (filter(sheet)) {
+                if (!filter(sheet)) {
                     continue;
                 }
                 got = got.concat(sprites.flatMap(spr => {
@@ -90,39 +90,5 @@ export class SpriteDatabase {
 
     getAudioCount() {
         return this.collections.reduce((a, v) => a + v.audio.length, 0);
-    }
-
-    getAllInMod(id: string) {
-        return pick(this.collections).from(c => c.owner.mod?.id === id).all();
-    }
-
-    getAllInDir(dir: string) {
-        return pick(this.collections).from(c => c.owner.directory === dir).all();
-    }
-
-    getAll() {
-        return pick(this.collections).all();
-    }
-
-    getAllFonts() {
-        return pick(this.collections).get([ 'fonts' ]);
-    }
-
-    getAllSprites() {
-        return pick(this.collections).get([ 'sprites' ]);
-    }
-
-    getAllSheets() {
-        return pick(this.collections).get([ 'sheets' ]);
-    }
-
-    getAllAudio() {
-        return pick(this.collections).get([ 'audio' ]);
-    }
-
-    getFavorites() {
-        return this.getAll().filter(
-            spr => this.favorites.some(f => f === spr.item.name)
-        );
     }
 }

@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function() {
 	const content = document.querySelector('main') as HTMLElement;
 	const select = document.getElementById('select-source') as HTMLSelectElement;
 	const search = document.getElementById('search') as HTMLInputElement;
-	const searchCount = document.getElementById('search-count') as HTMLElement;
+	const status = document.getElementById('status') as HTMLElement;
 
 	// for performance, we only want to load 
 	// sprites that are currently visible
@@ -64,6 +64,8 @@ document.addEventListener("DOMContentLoaded", function() {
 		if (circle) {
 			content.appendChild(circle);
 		}
+		status.innerHTML = 'Loading...';
+		// get selected state
 		vscode.postMessage({
 			command: 'get-items',
 			parts: select.value.split('::'),
@@ -71,7 +73,7 @@ document.addEventListener("DOMContentLoaded", function() {
 	}
 
 	function updateSearch() {
-		searchCount.innerHTML = `Found ${
+		status.innerHTML = `Found ${
 			getItemDatabase().showByQuery(search.value)
 		} results`;
 	}

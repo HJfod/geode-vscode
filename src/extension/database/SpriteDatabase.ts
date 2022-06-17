@@ -83,12 +83,21 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
             // find files
             for (const pattern of modInfo.resources.files) {
                 for (const file of glob.sync(pattern, globOptions)) {
-                    collection.sprites.push({
-                        name: basename(file),
-                        path: file,
-                        type: ItemType.sprite,
-                        owner: collection.owner,
-                    });
+                    if (file.endsWith('.ogg')) {
+                        collection.audio.push({
+                            name: basename(file),
+                            path: file,
+                            type: ItemType.audio,
+                            owner: collection.owner,
+                        });
+                    } else {
+                        collection.sprites.push({
+                            name: basename(file),
+                            path: file,
+                            type: ItemType.sprite,
+                            owner: collection.owner,
+                        });
+                    }
                 }
             }
 
@@ -124,112 +133,106 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
                     owner: collection.owner,
                 });
             }
+        } else {
+            // if it's not, then just enumerate files 
+            // and resolve by extension
 
-            // todo: audio files
+            // read all files in directory
+            const files = readdirRecursiveSync(dir);
 
-            database.collections.push(collection);
-            
-            continue;
-        }
-
-        // if it's not, then just enumerate files 
-        // and resolve by extension
-
-        // read all files in directory
-        const files = readdirRecursiveSync(dir);
-
-        // find spritesheets
-        for (const sheetPath of files) {
-            if (sheetPath.endsWith('.plist')) {
-                // check if this is a spritesheet (does it have a corresponding .png file)
-                if (!existsSync(sheetPath.replace('.plist', '.png'))) {
-                    continue;
-                }
-
-                const sheetName = removeQualityDecorators(basename(sheetPath));
-
-                // read sheet data and find all *.png strings inside
-                readFileSync(sheetPath).toString().match(/\w+\.png/g)?.forEach(match => {
-                    match = removeQualityDecorators(match);
-                    // check that this is not the same as the sheet (metadata field)
-                    if (match.replace('.png', '.plist') !== sheetName) {
-                        // has a sheet with this name already been found?
-                        if (!(sheetName in collection.sheets)) {
-                            collection.sheets[sheetName] = [{
-                                type: ItemType.sheetSprite,
-                                name: match,
-                                path: sheetPath,
-                                owner: collection.owner,
-                            }];
-                        }
-                        // does that sheet contain this sprite?
-                        else if (!collection.sheets[sheetName].some(spr => spr.name === match)) {
-                            collection.sheets[sheetName].push({
-                                type: ItemType.sheetSprite,
-                                name: match,
-                                path: sheetPath,
-                                owner: collection.owner,
-                            });
-                        }
+            // find spritesheets
+            for (const sheetPath of files) {
+                if (sheetPath.endsWith('.plist')) {
+                    // check if this is a spritesheet (does it have a corresponding .png file)
+                    if (!existsSync(sheetPath.replace('.plist', '.png'))) {
+                        continue;
                     }
-                });
-            }
-        }
 
-        // find fonts
-        for (const fontPath of files) {
-            if (fontPath.endsWith('.fnt')) {
-                const fontName = removeQualityDecorators(basename(fontPath));
-                // has this font been added already?
-                if (!collection.fonts.some(fnt => fnt.name === fontName)) {
-                    collection.fonts.push({
-                        type: ItemType.font,
-                        name: fontName,
-                        path: fontPath,
-                        owner: collection.owner,
+                    const sheetName = removeQualityDecorators(basename(sheetPath));
+
+                    // read sheet data and find all *.png strings inside
+                    readFileSync(sheetPath).toString().match(/\w+\.png/g)?.forEach(match => {
+                        match = removeQualityDecorators(match);
+                        // check that this is not the same as the sheet (metadata field)
+                        if (match.replace('.png', '.plist') !== sheetName) {
+                            // has a sheet with this name already been found?
+                            if (!(sheetName in collection.sheets)) {
+                                collection.sheets[sheetName] = [{
+                                    type: ItemType.sheetSprite,
+                                    name: match,
+                                    path: sheetPath,
+                                    owner: collection.owner,
+                                }];
+                            }
+                            // does that sheet contain this sprite?
+                            else if (!collection.sheets[sheetName].some(spr => spr.name === match)) {
+                                collection.sheets[sheetName].push({
+                                    type: ItemType.sheetSprite,
+                                    name: match,
+                                    path: sheetPath,
+                                    owner: collection.owner,
+                                });
+                            }
+                        }
                     });
                 }
             }
-        }
 
-        // find songs
-        for (const audioPath of files) {
-            if (audioPath.endsWith('.ogg')) {
-                const audioName = removeQualityDecorators(basename(audioPath));
-                // has this font been added already?
-                if (!collection.audio.some(a => a.name === audioName)) {
-                    collection.audio.push({
-                        type: ItemType.audio,
-                        name: audioName,
-                        path: audioPath,
+            // find fonts
+            for (const fontPath of files) {
+                if (fontPath.endsWith('.fnt')) {
+                    const fontName = removeQualityDecorators(basename(fontPath));
+                    // has this font been added already?
+                    if (!collection.fonts.some(fnt => fnt.name === fontName)) {
+                        collection.fonts.push({
+                            type: ItemType.font,
+                            name: fontName,
+                            path: fontPath,
+                            owner: collection.owner,
+                        });
+                    }
+                }
+            }
+
+            // find songs
+            for (const audioPath of files) {
+                if (audioPath.endsWith('.ogg')) {
+                    const audioName = removeQualityDecorators(basename(audioPath));
+                    // has this font been added already?
+                    if (!collection.audio.some(a => a.name === audioName)) {
+                        collection.audio.push({
+                            type: ItemType.audio,
+                            name: audioName,
+                            path: audioPath,
+                            owner: collection.owner,
+                        });
+                    }
+                }
+            }
+
+            // find sprites
+            for (const filePath of files) {
+                if (filePath.endsWith('.png')) {
+                    const fileName = removeQualityDecorators(basename(filePath));
+                    // is this a spritesheet?
+                    if (fileName.replace('.png', '.plist') in collection.sheets) {
+                        continue;
+                    }
+                    // is this a font?
+                    if (collection.fonts.some(fnt => fnt.name === fileName.replace('.png', '.fnt'))) {
+                        continue;
+                    }
+                    // has this sprite been added already?
+                    if (collection.sprites.some(spr => spr.name === fileName)) {
+                        continue;
+                    }
+                    collection.sprites.push({
+                        type: ItemType.sprite,
+                        name: fileName,
+                        path: filePath,
                         owner: collection.owner,
                     });
                 }
-            }
-        }
-
-        // find sprites
-        for (const filePath of files) {
-            if (filePath.endsWith('.png')) {
-                const fileName = removeQualityDecorators(basename(filePath));
-                // is this a spritesheet?
-                if (fileName.replace('.png', '.plist') in collection.sheets) {
-                    continue;
-                }
-                // is this a font?
-                if (collection.fonts.some(fnt => fnt.name === fileName.replace('.png', '.fnt'))) {
-                    continue;
-                }
-                // has this sprite been added already?
-                if (collection.sprites.some(spr => spr.name === fileName)) {
-                    continue;
-                }
-                collection.sprites.push({
-                    type: ItemType.sprite,
-                    name: fileName,
-                    path: filePath,
-                    owner: collection.owner,
-                });
             }
         }
 

@@ -28,18 +28,30 @@ function buildDatabasePageHtml(context: ExtensionContext) {
         )
         .replace('DATABASE_OPTIONS', 
             `${
+                `
+                    <option value="all">All</option>
+                    <option value="favorites">Favorites</option>
+                    <option value="sprites">Sprites</option>
+                    <option value="fonts">Fonts</option>
+                    <option value="audio">Audio</option>
+                ` +
                 getSpriteDatabase().collections.reduce((a, v) => {
+                    let res = '';
                     if (v.owner.mod) {
-                        return a + `<option value="mod::${v.owner.mod.id}">${v.owner.mod.name}</option>`;
+                        res += `<optgroup label="${v.owner.mod.name}">`;
                     } else {
-                        return a + `<option value="dir::${v.owner.directory}">${v.owner.directory}</option>`;
+                        res += `<optgroup label="${v.owner.directory}">`;
                     }
-                }, '') +
-                getSpriteDatabase().collections.reduce((a, v) => {
-                    return a + Object.keys(v.sheets).reduce(
-                        (sa, sv) => sa + `<option value="sheet::${v.owner.directory}::${sv}">${sv}</option>`,
-                        ''
+                    res += `
+                        <option value="all::${v.owner.directory}">All</option>
+                        <option value="sprites::${v.owner.directory}">Sprites</option>
+                        <option value="fonts::${v.owner.directory}">Fonts</option>
+                        <option value="audio::${v.owner.directory}">Audio</option>
+                    `;
+                    res += Object.keys(v.sheets).reduce(
+                        (sa, sv) => sa + `<option value="sheet::${v.owner.directory}::${sv}">${sv}</option>`
                     );
+                    return a + res + "</optgroup>";
                 }, '')
             }`
         );
@@ -70,77 +82,99 @@ export function buildDatabasePanel(context: ExtensionContext) {
         message => {
             switch (message.command) {
                 case 'get-database': {
+                    const database = getSpriteDatabase();
                     panel.webview.postMessage({
                         command: 'database',
-                        favorites: getSpriteDatabase().favorites,
+                        favorites: database.favorites,
                         default: 
                             getOptions().databaseShowFavoritesByDefault &&
-                            getSpriteDatabase().favorites.length ? 'favorites' : 'all'
+                            database.favorites.length ? 'favorites' : 'all'
                     });
                 } break;
 
                 case 'get-items': {
+                    const database = getSpriteDatabase();
                     switch (message.parts[0]) {
                         case 'all': {
                             panel.webview.postMessage({
                                 command: 'items',
-                                items: getSpriteDatabase().getAll(),
+                                items: pick(database.collections)
+                                    .from(c =>
+                                        message.parts.length > 1 ?
+                                            c.owner.directory === message.parts[1]
+                                            : true
+                                    )
+                                    .all(),
                             });
                         } break;
 
                         case 'favorites': {
                             panel.webview.postMessage({
                                 command: 'items',
-                                items: getSpriteDatabase().getFavorites(),
+                                items: pick(database.collections)
+                                    .all()
+                                    .filter(
+                                        spr => database.favorites.some(fav => fav === spr.item.name)
+                                    ),
                             });
                         } break;
 
                         case 'fonts': {
                             panel.webview.postMessage({
                                 command: 'items',
-                                items: getSpriteDatabase().getAllFonts(),
+                                items: pick(database.collections)
+                                    .from(c =>
+                                        message.parts.length > 1 ?
+                                            c.owner.directory === message.parts[1]
+                                            : true
+                                    )
+                                    .get([ 'fonts' ]),
                             });
                         } break;
 
                         case 'audio': {
                             panel.webview.postMessage({
                                 command: 'items',
-                                items: getSpriteDatabase().getAllAudio(),
+                                items: pick(database.collections)
+                                    .from(c =>
+                                        message.parts.length > 1 ?
+                                            c.owner.directory === message.parts[1]
+                                            : true
+                                    )
+                                    .get([ 'audio' ]),
                             });
                         } break;
 
                         case 'sheets': {
                             panel.webview.postMessage({
                                 command: 'items',
-                                items: getSpriteDatabase().getAllSheets(),
+                                items: pick(database.collections)
+                                    .from(c =>
+                                        message.parts.length > 1 ?
+                                            c.owner.directory === message.parts[1]
+                                            : true
+                                    )
+                                    .get([ 'sheets' ]),
                             });
                         } break;
 
                         case 'sprites': {
                             panel.webview.postMessage({
                                 command: 'items',
-                                items: getSpriteDatabase().getAllSprites(),
+                                items: pick(database.collections)
+                                    .from(c =>
+                                        message.parts.length > 1 ?
+                                            c.owner.directory === message.parts[1]
+                                            : true
+                                    )
+                                    .get([ 'sprites' ]),
                             });
                         } break;
                     
-                        case 'mod': {
-                            panel.webview.postMessage({
-                                command: 'items',
-                                items: getSpriteDatabase().getAllInMod(message.parts[1]),
-                            });
-                        } break;
-
-                        case 'dir': {
-                            panel.webview.postMessage({
-                                command: 'items',
-                                items: getSpriteDatabase().getAllInDir(message.parts[1]),
-                            });
-                        } break;
-
                         case 'sheet': {
                             panel.webview.postMessage({
                                 command: 'items',
-                                items: pick(getSpriteDatabase().collections)
+                                items: pick(database.collections)
                                     .from(c => c.owner.directory === message.parts[1])
                                     .in(s => s === message.parts[2]),
                             });
@@ -149,10 +183,11 @@ export function buildDatabasePanel(context: ExtensionContext) {
                 } break;
 
                 case 'set-favorite': {
+                    const database = getSpriteDatabase();
                     if (message.favorite) {
-                        getSpriteDatabase().favorites.push(message.name);
+                        database.favorites.push(message.name);
                     } else {
-                        getSpriteDatabase().favorites = getSpriteDatabase().favorites.filter(f => f !== message.name);
+                        database.favorites = database.favorites.filter(f => f !== message.name);
                     }
                 } break;
 

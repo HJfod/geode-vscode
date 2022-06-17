@@ -102,7 +102,7 @@
 		"package": "webpack --mode production --devtool hidden-source-map",
 		"compile": "tsc -p ./src/extension & webpack --config ./src/webview/webpack.config.js --mode production",
 		"watch-ext": "tsc -watch -p ./src/extension",
-		"watch-wv": "webpack watch --config ./src/webview/webpack.config.js --mode development",
+		"compile-wv": "webpack --config ./src/webview/webpack.config.js --mode development",
 		"pretest": "npm run compile && npm run lint",
 		"lint": "eslint src --ext ts",
 		"test": "node ./out/test/runTest.js"

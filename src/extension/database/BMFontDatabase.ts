@@ -3,9 +3,63 @@ import { Char, FontData, parseFnt } from './fnt';
 import { dirname, join } from 'path';
 import sharp from 'sharp';
 
-export class BMFont {
-    data: FontData;
+function sharpFromClear(width: number, height: number) {
+    return sharp(
+        Buffer.alloc(width * height * 4, 0x00000000),
+        {
+            raw: {
+                width: width,
+                height: height,
+                channels: 4
+            }
+        }
+    );
+}
+
+export interface IFont {
+    path: string,
+
+    render(text: string): Promise<string>,
+}
+
+export class TrueTypeFont implements IFont {
     path: string;
+
+    constructor(path: string) {
+        this.path = path;
+    }
+
+    async render(_: string) {
+        const width = 250;
+        const height = 50;
+
+        const svg = `
+            <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+                <text
+                    x="50%"
+                    y="100%"
+                    text-anchor="middle"
+                    font-size="50px"
+                    font-family="Comic Sans MS"
+                    fill="#fff"
+                >No Preview</text>
+            </svg>
+        `;
+        return await sharpFromClear(width, height)
+            .composite([{
+                input: Buffer.from(svg),
+                top: 0,
+                left: 0,
+            }])
+            .png()
+            .toBuffer()
+            .then(b => b.toString('base64'));
+    }
+}
+
+export class BMFont implements IFont {
+    path: string;
+    data: FontData;
 
     constructor(data: FontData, path: string) {
         this.data = data;
@@ -50,16 +104,7 @@ export class BMFont {
             }
         }
         let x = 0;
-        return await sharp(
-            Buffer.alloc(totalWidth * totalHeight * 4, 0x00000000),
-            {
-                raw: {
-                    width: totalWidth,
-                    height: totalHeight,
-                    channels: 4
-                }
-            }
-        )
+        return await sharpFromClear(totalWidth, totalHeight)
             .composite(chars.map(char => {
                 const res = {
                     input: char.data,
@@ -76,16 +121,21 @@ export class BMFont {
 }
 
 export class BMFontDatabase {
-    fonts: BMFont[] = [];
+    fonts: IFont[] = [];
 
     public async loadFont(path: string) {
         const loaded = this.fonts.find(font => font.path === path);
         if (loaded) {
             return loaded;
         }
-        const font = BMFont.createFromFntFile(path);
-        if (!font) {
-            return Promise.reject("Unable to create font");
+        let font: IFont | null;
+        if (path.endsWith('.fnt')) {
+            font = BMFont.createFromFntFile(path);
+            if (!font) {
+                return Promise.reject("Unable to create font");
+            }
+        } else {
+            font = new TrueTypeFont(path);
         }
         this.fonts.push(font);
         return font;

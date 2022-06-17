@@ -7,7 +7,7 @@
 			"label": "Watch all",
 			"dependsOn": [
 				"Watch extension",
-				"Watch webview",
+				"Compile webview",
 			],
 			"dependsOrder": "parallel",
 			"group": {
@@ -26,9 +26,9 @@
 			}
 		},
 		{
-			"label": "Watch webview",
+			"label": "Compile webview",
 			"type": "npm",
-			"script": "watch-wv",
+			"script": "compile-wv",
 			"problemMatcher": [
 				{
 					"fileLocation": "absolute",

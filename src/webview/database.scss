@@ -93,52 +93,78 @@ main {
 }
 
 article {
-    padding: .5rem;
-    display: flex;
-    flex-direction: column;
-    width: var(--item-width);
-    height: var(--item-height);
-    transition-duration: .5s;
-    align-items: center;
+    & {
+        padding: .5rem;
+        display: flex;
+        flex-direction: column;
+        width: var(--item-width);
+        height: var(--item-height);
+        transition-duration: .5s;
+        align-items: center;
+    }
+
+    p {
+        word-break: break-all;
+        max-width: var(--item-width);
+        margin-top: 2px;
+        margin-bottom: 2px;
+    }
+
+    a {
+        word-break: break-all;
+        max-width: var(--item-width);
+        font-style: italic;
+        opacity: 25%;
+        font-size: 0.8em;
+    }
+
+    a:hover {
+        cursor: pointer;
+        opacity: 100%;
+    }
+
+    > #image-div {
+        min-height: 0;
+        flex-grow: 1;
+        align-self: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    > #buttons {
+        display: grid;
+        align-self: stretch;
+        grid-template-columns: 4fr 1fr 1fr;
+        gap: 5px;
+    }
+
+    > #buttons > button:not(:first-child) {
+        padding: 0px;
+    }
+
+    > .hover-item {
+        display: none;
+        align-self: flex-end;
+    }
+
+    &:hover > .hover-item {
+        display: initial;
+        position: relative;
+        height: 0;
+    }
 }
 
-article p {
-    word-break: break-all;
-    max-width: var(--item-width);
-    margin-top: 2px;
-    margin-bottom: 2px;
-}
+#image-div {
+    > * {
+        min-height: 0;
+    }
 
-article a {
-    word-break: break-all;
-    max-width: var(--item-width);
-    font-style: italic;
-    opacity: 25%;
-    font-size: 0.8em;
-}
-
-article a:hover {
-    cursor: pointer;
-    opacity: 100%;
-}
-
-article > #image-div {
-    min-height: 0;
-    flex-grow: 1;
-    align-self: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-#image-div > * {
-    min-height: 0;
-}
-
-#image-div > p {
-    opacity: 50%;
-    font-weight: bold;
-    color: var(--vscode-symbolIcon-nullForeground);
+    > p {
+        opacity: 50%;
+        font-weight: bold;
+        color: var(--vscode-symbolIcon-nullForeground);
+    }
 }
 
 #dropdown {
@@ -156,38 +182,8 @@ article > #image-div {
     display: none;
 }
 
-article > #buttons {
-    display: grid;
-    align-self: stretch;
-    grid-template-columns: 4fr 1fr 1fr;
-    gap: 5px;
-}
-
-article > #buttons > button:not(:first-child) {
-    padding: 0px;
-}
-
-article > .hover-item {
-    display: none;
-    align-self: flex-end;
-}
-
-article:hover > .hover-item {
-    display: initial;
-    position: relative;
-    height: 0;
-}
-
 .hover-item > button {
     font-size: .8em;
-}
-
-.side-by-side {
-    display: flex;
-}
-
-.side-by-side div {
-    margin-right: 30px;
 }
 
 .loading-circle {
