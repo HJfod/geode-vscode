@@ -51,3 +51,20 @@ export interface SpriteCollection {
     fonts: Item[],
     audio: Item[],
 }
+
+export namespace select {
+    export interface Option {
+        value: string,
+        text: string,
+    }
+
+    export interface Group {
+        title: string,
+        options: Option[],
+        subgroups: Group[],
+    }
+
+    export interface Menu {
+        topLevel: Group,
+    }
+}

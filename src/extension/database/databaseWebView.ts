@@ -25,35 +25,6 @@ function buildDatabasePageHtml(context: ExtensionContext) {
             }, total: ${
                 getSpriteDatabase().getTotalCount()
             }`
-        )
-        .replace('DATABASE_OPTIONS', 
-            `${
-                `
-                    <option value="all">All</option>
-                    <option value="favorites">Favorites</option>
-                    <option value="sprites">Sprites</option>
-                    <option value="fonts">Fonts</option>
-                    <option value="audio">Audio</option>
-                ` +
-                getSpriteDatabase().collections.reduce((a, v) => {
-                    let res = '';
-                    if (v.owner.mod) {
-                        res += `<optgroup label="${v.owner.mod.name}">`;
-                    } else {
-                        res += `<optgroup label="${v.owner.directory}">`;
-                    }
-                    res += `
-                        <option value="all::${v.owner.directory}">All</option>
-                        <option value="sprites::${v.owner.directory}">Sprites</option>
-                        <option value="fonts::${v.owner.directory}">Fonts</option>
-                        <option value="audio::${v.owner.directory}">Audio</option>
-                    `;
-                    res += Object.keys(v.sheets).reduce(
-                        (sa, sv) => sa + `<option value="sheet::${v.owner.directory}::${sv}">${sv}</option>`
-                    );
-                    return a + res + "</optgroup>";
-                }, '')
-            }`
         );
 }
 
@@ -88,7 +59,8 @@ export function buildDatabasePanel(context: ExtensionContext) {
                         favorites: database.favorites,
                         default: 
                             getOptions().databaseShowFavoritesByDefault &&
-                            database.favorites.length ? 'favorites' : 'all'
+                            database.favorites.length ? 'favorites' : 'all',
+                        options: database.constructSelectMenu(),
                     });
                 } break;
 

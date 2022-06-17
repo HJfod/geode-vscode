@@ -1,6 +1,7 @@
 
 import { MetaItem } from '../types/types';
 import { createLoadingCircle, getItemDatabase } from './item';
+import { SelectModel } from './list';
 import "./database.scss";
  
 let favorites: string[] = [];
@@ -20,7 +21,9 @@ export function removeFavorite(fav: string) {
 document.addEventListener("DOMContentLoaded", function() {
 	const vscode = acquireVsCodeApi();
 	const content = document.querySelector('main') as HTMLElement;
-	const select = document.getElementById('select-source') as HTMLSelectElement;
+	const select = new SelectModel(
+		document.getElementById('select-source') as HTMLButtonElement
+	);
 	const search = document.getElementById('search') as HTMLInputElement;
 	const status = document.getElementById('status') as HTMLElement;
 
@@ -42,7 +45,7 @@ document.addEventListener("DOMContentLoaded", function() {
 		}
 	);
 
-	select?.addEventListener('change', _ => {
+	select.onChangeState(_ => {
 		requestNewState();
 	});
 
@@ -50,10 +53,11 @@ document.addEventListener("DOMContentLoaded", function() {
 		updateSearch();
 	});
 
-	document.addEventListener('click', _ => {
+	document.addEventListener('mousedown', e => {
 		document.querySelectorAll('#dropdown').forEach(
 			dropdown => dropdown.classList.add('hidden')
 		);
+		select.hide(e.target as Node);
 	});
 
 	function requestNewState() {
@@ -103,15 +107,13 @@ document.addEventListener("DOMContentLoaded", function() {
 		const message = e.data;
 		switch (message.command) {
 			case 'database': {
-				// if i just assign `database = message.database` the 
-				// resulting object has none of the functions...
-				// i suspect vscode is doing JSON.stringify or smth 
-				// when passing messages
 				favorites = message.favorites;
 
-				// update <select> value
+				select.setOptions(message.options);
+
+				// update select value
 				select.value = message.default;
-				select.dispatchEvent(new Event('change'));
+				select.stateChanged();
 			} break;
 
 			case 'items': {

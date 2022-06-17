@@ -205,3 +205,37 @@ article {
 .favorite {
     color: rgb(236, 196, 67);
 }
+
+#select-source {
+    width: 250px;
+    text-align: left;
+}
+
+.select-menu {
+    & {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        color: var(--vscode-settings-dropdownForeground);
+        background: var(--vscode-settings-dropdownBackground);
+        border: 1px solid var(--vscode-settings-dropdownBorder);
+    }
+
+    > button {
+        display: flex;
+        justify-content: start;
+        align-items: center;
+        gap: 10px;
+    }
+
+    > button.group > .arrow {
+        border: solid var(--vscode-settings-dropdownForeground);
+        border-width: 0 3px 3px 0;
+        opacity: 30%;
+        padding: 3px;
+        transform: rotate(-45deg);
+        margin-left: auto;
+        justify-self: end;
+        float: right;
+    }
+}
