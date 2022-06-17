@@ -5,6 +5,7 @@ import { readdirSync, readFileSync,  existsSync } from 'fs';
 import { OutputChannel, workspace } from 'vscode';
 import { SpriteCollection, modjson, ItemType } from '../../types/types';
 import { SpriteDatabase } from '../../types/SpriteDatabase';
+import G, { glob } from 'glob';
 
 function removeQualityDecorators(file: string) {
     return file.replace(/-uhd|-hd/g, '');
@@ -43,6 +44,7 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
         ...getOptions().spriteSearchDirectories
     ];
 
+    // check if the current workspace(s) contain Geode mods
     if (workspace.workspaceFolders) {
         for (const editor of workspace.workspaceFolders) {
             // is current workspace a geode mod?
@@ -58,8 +60,6 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
     // search sprites
     for (const dir of database.searchDirectories) {
 
-        // read all files in directory
-        const files = readdirRecursiveSync(dir);
         const modInfo = getModInDir(dir);
 
         const collection: SpriteCollection = {
@@ -72,6 +72,71 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
             sprites: [],
             audio: [],
         };
+
+        // if this is a mod, use `[mod.json].resources` to find files
+        if (modInfo) {
+            const globOptions: G.IOptions = {
+                cwd: dir,
+                absolute: true,
+            };
+
+            // find files
+            for (const pattern of modInfo.resources.files) {
+                for (const file of glob.sync(pattern, globOptions)) {
+                    collection.sprites.push({
+                        name: basename(file),
+                        path: file,
+                        type: ItemType.sprite,
+                        owner: collection.owner,
+                    });
+                }
+            }
+
+            // find spritesheets
+            for (const [sheet, patterns] of Object.entries(modInfo.resources.spritesheets)) {
+                for (const pattern of patterns) {
+                    for (const file of glob.sync(pattern, globOptions)) {
+                        if (sheet in collection.sheets) {
+                            collection.sheets[sheet].push({
+                                name: basename(file),
+                                path: file,
+                                type: ItemType.sheetSprite,
+                                owner: collection.owner,
+                            });
+                        } else {
+                            collection.sheets[sheet] = [{
+                                name: basename(file),
+                                path: file,
+                                type: ItemType.sheetSprite,
+                                owner: collection.owner,
+                            }];
+                        }
+                    }
+                }
+            }
+
+            // find fonts
+            for (const [name, font] of Object.entries(modInfo.resources.fonts)) {
+                collection.fonts.push({
+                    name: name,
+                    path: join(dir, font.path),
+                    type: ItemType.font,
+                    owner: collection.owner,
+                });
+            }
+
+            // todo: audio files
+
+            database.collections.push(collection);
+            
+            continue;
+        }
+
+        // if it's not, then just enumerate files 
+        // and resolve by extension
+
+        // read all files in directory
+        const files = readdirRecursiveSync(dir);
 
         // find spritesheets
         for (const sheetPath of files) {

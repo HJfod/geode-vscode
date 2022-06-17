@@ -7,9 +7,6 @@
         "lib": [
             "es2020"
         ],
-        "paths": {
-            "@shared/*": ["../types/*"],
-        },
         "esModuleInterop": true,
 		"outDir": "../../out",
 		"experimentalDecorators": true,

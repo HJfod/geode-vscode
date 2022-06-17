@@ -1,10 +1,6 @@
 
-import { Item, ItemType } from '../types/types';
+import { Item, ItemType, MetaItem } from '../types/types';
 import { getFavorites, removeFavorite } from './database';
-
-export function getFilename(path: string) {
-    return path.replace(/^.*[\\\/]/, '').replace(/-hd|-uhd/g, '');
-}
 
 function filterSearch(name: string, query: string) {
     return name.replace(/\s/g, '').toLowerCase().includes(
@@ -22,13 +18,14 @@ export function createLoadingCircle(parent: Element | null) {
 }
 
 export interface ItemOptions {
-    item: Item,
+    meta: MetaItem,
     favorite: boolean,
     postMessage: (message: unknown) => void
 }
 
 export class ItemModel {
     item: Item;
+    sheet: string | null;
     id: string;
     element: HTMLElement;
     image: HTMLImageElement | HTMLParagraphElement | null = null;
@@ -38,9 +35,10 @@ export class ItemModel {
 
     constructor(options: ItemOptions) {
         this.options = options;
-        this.item = options.item;
+        this.item = options.meta.item;
+        this.sheet = options.meta.sheet;
         this.isFavorite = options.favorite;
-        this.id = options.item.name;
+        this.id = options.meta.item.name;
         this.element = this.build(options);
         this.imageDiv = this.element.querySelector('#image-div') as HTMLDivElement;
     }
@@ -135,10 +133,7 @@ export class ItemModel {
         element.innerHTML = `
             <div id="image-div"></div>
             <p>${this.item.name}</p>
-            ${
-                this.item.type === ItemType.sheetSprite ?
-                `<a>${getFilename(this.item.path)}</a>` : ''
-            }
+            ${this.sheet ? `<a>${this.sheet}</a>` : ''}
             <div id="buttons"></div>
             <div id="dropdown" class="hidden"></div>
         `;
@@ -232,11 +227,11 @@ export class ItemModel {
         });
         element.querySelector('#buttons')?.appendChild(starButton);
 
-        if (this.item.type === ItemType.sheetSprite) {
+        if (this.sheet) {
             const sheetLink = element.querySelector('a');
             sheetLink?.addEventListener('click', _ => {
                 const select = document.getElementById('select-source') as HTMLSelectElement;
-                select.value = `sheet::${this.item.owner.directory}::${getFilename(this.item.path)}`;
+                select.value = `sheet::${this.item.owner.directory}::${this.sheet}`;
                 select.dispatchEvent(new Event('change'));
             });
         }

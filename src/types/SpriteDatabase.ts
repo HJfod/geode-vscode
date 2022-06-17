@@ -1,5 +1,62 @@
 
-import { SpriteCollection } from "./types";
+import { MetaItem, SpriteCollection } from "./types";
+
+export class PickList {
+    data: SpriteCollection[];
+
+    constructor(data: SpriteCollection[]) {
+        this.data = data;
+    }
+
+    from(pickFun: (collection: SpriteCollection) => boolean) {
+        this.data = this.data.filter(pickFun);
+        return this;
+    }
+
+    get(keys: (keyof SpriteCollection)[]) {
+        if (!this.data) {
+            return [];
+        }
+        let got: MetaItem[] = [];
+        for (const data of this.data) {
+            for (const key of keys) {
+                if (key === 'sheets') {
+                    for (const [sheet, sprites] of Object.entries(data[key])) {
+                        got = got.concat(sprites.flatMap(spr => {
+                            return { item: spr, sheet: sheet };
+                        }));
+                    }
+                } else if (key !== 'owner') {
+                    got = got.concat(data[key].map(s => { return { item: s, sheet: null }; }));
+                }
+            }
+        }
+        return got.sort((a, b) => a.item.name.localeCompare(b.item.name));
+    }
+
+    in(filter: (sheet: string) => boolean) {
+        let got: MetaItem[] = [];
+        for (const data of this.data) {
+            for (const [sheet, sprites] of Object.entries(data.sheets)) {
+                if (filter(sheet)) {
+                    continue;
+                }
+                got = got.concat(sprites.flatMap(spr => {
+                    return { item: spr, sheet: sheet };
+                }));
+            }
+        }
+        return got;
+    }
+
+    all() {
+        return this.get([ 'sprites', 'sheets', 'fonts', 'audio' ]);
+    }
+}
+
+export function pick(collections: SpriteCollection[]): PickList {
+    return new PickList(collections);
+}
 
 export class SpriteDatabase {
     searchDirectories: string[] = [];
@@ -36,65 +93,36 @@ export class SpriteDatabase {
     }
 
     getAllInMod(id: string) {
-        const collection = this.collections.find(c => c.owner.mod?.id === id);
-        if (!collection) {
-            return [];
-        }
-        return collection.sprites
-            .concat(Object.values(collection.sheets).flat())
-            .concat(collection.fonts)
-            .concat(collection.audio)
-            .sort((a, b) => a.name.localeCompare(b.name));
+        return pick(this.collections).from(c => c.owner.mod?.id === id).all();
     }
 
     getAllInDir(dir: string) {
-        const collection = this.collections.find(c => c.owner.directory === dir);
-        if (!collection) {
-            return [];
-        }
-        return collection.sprites
-            .concat(Object.values(collection.sheets).flat())
-            .concat(collection.fonts)
-            .concat(collection.audio)
-            .sort((a, b) => a.name.localeCompare(b.name));
+        return pick(this.collections).from(c => c.owner.directory === dir).all();
     }
 
     getAll() {
-        return this.collections.flatMap(collection => 
-            collection.sprites
-                .concat(Object.values(collection.sheets).flat())
-                .concat(collection.fonts)
-                .concat(collection.audio)
-        ).sort((a, b) => a.name.localeCompare(b.name));
+        return pick(this.collections).all();
     }
 
     getAllFonts() {
-        return this.collections.flatMap(collection => 
-            collection.fonts
-        ).sort((a, b) => a.name.localeCompare(b.name));
+        return pick(this.collections).get([ 'fonts' ]);
     }
 
     getAllSprites() {
-        return this.collections.flatMap(collection => 
-            collection.sprites
-        ).sort((a, b) => a.name.localeCompare(b.name));
+        return pick(this.collections).get([ 'sprites' ]);
     }
 
     getAllSheets() {
-        return this.collections.flatMap(collection => 
-            Object.values(collection.sheets).flat()
-        ).sort((a, b) => a.name.localeCompare(b.name));
+        return pick(this.collections).get([ 'sheets' ]);
     }
 
     getAllAudio() {
-        return this.collections.flatMap(collection => 
-            collection.audio
-        ).sort((a, b) => a.name.localeCompare(b.name));
+        return pick(this.collections).get([ 'audio' ]);
     }
 
     getFavorites() {
         return this.getAll().filter(
-            spr => this.favorites.some(f => f === spr.name)
+            spr => this.favorites.some(f => f === spr.item.name)
         );
     }
 }

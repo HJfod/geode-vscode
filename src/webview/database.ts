@@ -1,5 +1,5 @@
 
-import { Item } from '../types/types';
+import { MetaItem } from '../types/types';
 import { createLoadingCircle, getItemDatabase } from './item';
 import "./database.scss";
  
@@ -10,9 +10,7 @@ export function getFavorites() {
 }
 
 export function removeFavorite(fav: string) {
-	favorites = favorites.filter(
-		i => i !== fav
-	);
+	favorites = favorites.filter(i => i !== fav);
 }
 
 // so for some reason InlineChunkHtmlPlugin in webpack 
@@ -20,7 +18,6 @@ export function removeFavorite(fav: string) {
 // have everything wrapped in a function anyway so just 
 // do this lol
 document.addEventListener("DOMContentLoaded", function() {
-
 	const vscode = acquireVsCodeApi();
 	const content = document.querySelector('main') as HTMLElement;
 	const select = document.getElementById('select-source') as HTMLSelectElement;
@@ -79,12 +76,12 @@ document.addEventListener("DOMContentLoaded", function() {
 		} results`;
 	}
 
-	function updateData(data: Item[]) {
+	function updateData(data: MetaItem[]) {
 		getItemDatabase().clear();
-		data.forEach(spr => {
+		data.forEach(meta => {
 			const item = getItemDatabase().create({
-				item: spr,
-				favorite: favorites.some(f => f === spr.name),
+				meta: meta,
+				favorite: favorites.some(f => f === meta.item.name),
 				// idk if this is unsafe
 				// the docs said to never pass vscode to global scope
 				// but since all the items are allocated inside this 
@@ -130,5 +127,4 @@ document.addEventListener("DOMContentLoaded", function() {
 
 	// focus search input for mouseless computing
 	search.focus();
-
 });

@@ -7,7 +7,8 @@ import { getSheetDatabase } from "./SheetDatabase";
 import { createCCMenuItemSpriteExtra, createCCMISEithBS, createCCSprite, insertSpriteName } from "../source/snippet";
 import { getSpriteDatabase } from "./SpriteDatabase";
 import openExplorer from 'open-file-explorer';
-import { Item } from "@shared/types";
+import { Item } from "../../types/types";
+import { pick } from "../../types/SpriteDatabase";
 
 function buildDatabasePageHtml(context: ExtensionContext) {
     // read html file and replace static content
@@ -137,12 +138,11 @@ export function buildDatabasePanel(context: ExtensionContext) {
                         } break;
 
                         case 'sheet': {
-                            const collection = getSpriteDatabase().collections.find(c => c.owner.directory === message.parts[1]);
                             panel.webview.postMessage({
                                 command: 'items',
-                                items: collection ?
-                                    collection.sheets[message.parts[2]] : 
-                                    [],
+                                items: pick(getSpriteDatabase().collections)
+                                    .from(c => c.owner.directory === message.parts[1])
+                                    .in(s => s === message.parts[2]),
                             });
                         } break;
                     }
@@ -267,6 +267,8 @@ export function buildDatabasePanel(context: ExtensionContext) {
                     window.showInformationMessage(
                         `Name: ${
                             item.name
+                        }\nPath: ${
+                            item.path
                         }\nType: ${
                             item.type
                         }\nDirectory: ${
