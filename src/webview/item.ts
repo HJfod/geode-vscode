@@ -1,6 +1,7 @@
 
-import { Item, ItemType, MetaItem } from '../types/types';
+import { Item, ItemType, MetaItem, select } from '../types/types';
 import { getFavorites, removeFavorite } from './database';
+import { getSelectDatabase, SelectModel } from './list';
 
 function filterSearch(name: string, query: string) {
     return name.replace(/\s/g, '').toLowerCase().includes(
@@ -32,6 +33,7 @@ export class ItemModel {
     imageDiv: HTMLDivElement;
     isFavorite: boolean;
     options: ItemOptions;
+    select: SelectModel | null;
 
     constructor(options: ItemOptions) {
         this.options = options;
@@ -39,6 +41,7 @@ export class ItemModel {
         this.sheet = options.meta.sheet;
         this.isFavorite = options.favorite;
         this.id = options.meta.item.name;
+        this.select = null;
         this.element = this.build(options);
         this.imageDiv = this.element.querySelector('#image-div') as HTMLDivElement;
     }
@@ -135,7 +138,6 @@ export class ItemModel {
             <p>${this.item.name}</p>
             ${this.sheet ? `<a>${this.sheet}</a>` : ''}
             <div id="buttons"></div>
-            <div id="dropdown" class="hidden"></div>
         `;
 
         const useButton = document.createElement('button');
@@ -149,36 +151,42 @@ export class ItemModel {
         });
         element.querySelector('#buttons')?.appendChild(useButton);
 
-        const dropdown = element.querySelector('#dropdown') as HTMLDivElement;
-
+        const dropdownMenu: select.Menu = {
+            topLevel: {
+                title: '',
+                options: [],
+                subgroups: [],
+            }
+        };
+        
         // todo: deal with fonts (have a Create CCLabel for them)
-        const dropdownItems = [
+        dropdownMenu.topLevel.options = [
             {
                 text: 'Create CCSprite',
-                callback: (_: MouseEvent) => {
+                selected: () => {
                     options.postMessage({
                         command: 'use-value',
                         value: this.item,
                         type: 'CCSprite'
                     });
-                }
+                },
             },
             {
                 text: 'Create button',
-                callback: (_: MouseEvent) => {
+                selected: () => {
                     options.postMessage({
                         command: 'use-value',
                         value: this.item,
                         type: 'CCMenuItemSpriteExtra'
                     });
-                }
+                },
             }
         ];
 
         if (this.item.type === ItemType.sprite) {
-            dropdownItems.push({
+            dropdownMenu.topLevel.options.push({
                 text: 'Create button w/ ButtonSprite',
-                callback: (_: MouseEvent) => {
+                selected: () => {
                     options.postMessage({
                         command: 'use-value',
                         value: this.item,
@@ -188,22 +196,13 @@ export class ItemModel {
             });
         }
 
-        for (const btn of dropdownItems) {
-            const dropdownBtn = document.createElement('button');
-            dropdownBtn.innerHTML = btn.text;
-            dropdownBtn.addEventListener('click', btn.callback);
-            dropdown.appendChild(dropdownBtn);
-        }
-
         const otherUseButton = document.createElement('button');
-        otherUseButton.innerHTML = '...';
-        otherUseButton.addEventListener('click', e => {
-            dropdown.style.top = e.pageY + 'px';
-            dropdown.style.left = e.pageX + 'px';
-            dropdown.classList.remove('hidden');
-            e.stopPropagation();
-        });
+        otherUseButton.classList.add('select-button');
         element.querySelector('#buttons')?.appendChild(otherUseButton);
+
+        this.select = getSelectDatabase().create(otherUseButton);
+        this.select.text = '...';
+        this.select.setOptions(dropdownMenu);
 
         const starButton = document.createElement('button');
         starButton.innerHTML = '★';
@@ -288,6 +287,9 @@ export class ItemDatabase {
 
     clear() {
         this.items.forEach(item => {
+            if (item.select) {
+                getSelectDatabase().remove(item.select);
+            }
             item.element.remove();
         });
         this.items = [];

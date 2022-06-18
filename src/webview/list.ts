@@ -1,19 +1,22 @@
+
 import { select } from "./types";
-
-
 
 export class SelectModel {
     button: HTMLButtonElement;
-    popup: HTMLDivElement | null;
-    value: string;
+    popups: HTMLDivElement[];
+    value: string | undefined;
+    text: string | undefined;
+    arrow: boolean;
     textValueMap: { [name: string]: string };
     options: select.Menu;
-    onChangeStateFun: ((value: string) => void) | null = null;
+    onChangeStateFun: ((value: string | undefined) => void) | null = null;
 
     constructor(elem: HTMLButtonElement) {
         this.button = elem;
-        this.popup = null;
-        this.value = '';
+        this.popups = [];
+        this.value = undefined;
+        this.text = undefined;
+        this.arrow = true;
         this.options = {
             topLevel: {
                 title: '',
@@ -35,18 +38,21 @@ export class SelectModel {
         popup.style.top = `${y}px`;
         popup.style.left = `${x}px`;
 
-        const createOption = (opt: select.Option) => {
+        for (const option of group.options) {
             const button = document.createElement('button');
-            button.innerHTML = opt.text;
+            button.innerHTML = option.text;
             button.addEventListener('click', _ => {
-                this.value = opt.value;
+                this.value = option.value;
+                if (option.selected) {
+                    option.selected();
+                }
                 this.stateChanged();
                 this.hide();
             });
-            return button;
-        };
+            popup.appendChild(button);
+        }
 
-        const createSubmenu = (subgroup: select.Group) => {
+        for (const subgroup of group.subgroups) {
             const button = document.createElement('button');
             button.innerHTML = `${
                 subgroup.title
@@ -54,47 +60,37 @@ export class SelectModel {
             button.classList.add('group');
             button.addEventListener('click', _ => {
                 const rect = button.getBoundingClientRect();
-                const boundingRect = button.parentElement?.getBoundingClientRect();
-                popup.appendChild(this.createMenu(
-                    subgroup,
-                    rect.width,
-                    rect.top - (boundingRect?.top ?? 0),
-                ));
+                this.createMenu(subgroup, rect.left + rect.width, rect.top);
             });
-            return button;
-        };
-
-        for (const option of group.options) {
-            popup.appendChild(createOption(option));
+            popup.appendChild(button);
         }
 
-        for (const subgroup of group.subgroups) {
-            popup.appendChild(createSubmenu(subgroup));
-        }
+        document.body.appendChild(popup);
+        this.popups.push(popup);
 
         return popup;
     }
 
     show() {
         // remove old popup if one exists
-        this.popup?.remove();
+        this.hide();
         // get button position
         const rect = this.button.getBoundingClientRect();
         // create new popup
-        document.body.appendChild(
-            this.popup = this.createMenu(
-                this.options.topLevel,
-                rect.left + document.body.scrollLeft,
-                rect.top + rect.height + document.body.scrollTop,
-            )
+        this.createMenu(
+            this.options.topLevel,
+            rect.left + document.body.scrollLeft,
+            rect.top + rect.height + document.body.scrollTop,
         );
     }
 
     hide(node: Node | null = null) {
         if (!node) {
             // remove popup
-            this.popup?.remove();
-            this.popup = null;
+            for (const popup of this.popups) {
+                popup.remove();
+            }
+            this.popups = [];
         } else {
             // if the button was clicked, just 
             // reshow the whole menu
@@ -103,18 +99,14 @@ export class SelectModel {
             }
             // otherwise, check if we have a menu 
             // to hide
-            else if (this.popup) {
+            else if (this.popups) {
                 // hide submenus that are not the parents of 
                 // or the one clicked
-                const showIfIn = (menu: Element) => {
-                    if (!menu.contains(node)) {
-                        menu.remove();
-                    } else {
-                        menu.querySelectorAll('.select-menu')
-                            .forEach(p => showIfIn(p));
+                this.popups.forEach(p => {
+                    if (!p.contains(node)) {
+                        p.remove();
                     }
-                };
-                showIfIn(this.popup);
+                });
             }
         }
     }
@@ -124,25 +116,56 @@ export class SelectModel {
         this.textValueMap = {};
         const iterateAddOptions = (group: select.Group) => {
             for (const opt of group.options) {
-                this.textValueMap[opt.value] = opt.text;
+                if (opt.value) {
+                    this.textValueMap[opt.value] = opt.text;
+                }
             }
             for (const grp of group.subgroups) {
                 iterateAddOptions(grp);
             }
         };
         iterateAddOptions(menu.topLevel);
-        console.log(this.textValueMap);
     }
 
-    onChangeState(fun: (value: string) => void) {
+    onChangeState(fun: (value: string | undefined) => void) {
         this.onChangeStateFun = fun;
     }
 
     stateChanged() {
-        console.log(this.value);
-        this.button.innerHTML = this.textValueMap[this.value];
+        const arrow = this.arrow ? '<span class="arrow"></span>' : '';
+        if (this.text) {
+            this.button.innerHTML = `${this.text}${arrow}`;
+        } else if (this.value) {
+            this.button.innerHTML = `${this.textValueMap[this.value]}${arrow}`;
+        }
         if (this.onChangeStateFun) {
             this.onChangeStateFun(this.value);
         }
     }
+}
+
+export class SelectDatabase {
+    models: SelectModel[] = [];
+
+    create(elem: HTMLButtonElement) {
+        const model = new SelectModel(elem);
+        this.models.push(model);
+        return model;
+    }
+
+    remove(model: SelectModel) {
+        this.models = this.models.filter(m => m !== model);
+    }
+
+    hideAll(node: Node | null = null) {
+        for (const model of this.models) {
+            model.hide(node);
+        }
+    }
+}
+
+const database = new SelectDatabase;
+
+export function getSelectDatabase() {
+    return database;
 }

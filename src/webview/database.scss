@@ -167,17 +167,6 @@ article {
     }
 }
 
-#dropdown {
-    display: flex;
-    flex-direction: column;
-    position: absolute;
-    background-color: var(--vscode-settings-dropdownBackground);
-}
-
-#dropdown.hidden {
-    display: none;
-}
-
 .hidden {
     display: none;
 }
@@ -207,8 +196,28 @@ article {
 }
 
 #select-source {
-    width: 250px;
-    text-align: left;
+    min-width: 250px;
+}
+
+.select-button {
+    & {
+        display: flex;
+        justify-content: start;
+        align-items: center;
+        gap: 10px;
+    }
+
+    > .arrow {
+        border: solid var(--vscode-settings-dropdownForeground);
+        border-width: 0 .2em .2em 0;
+        opacity: 70%;
+        padding: .2em;
+        transform: rotate(45deg);
+        margin-left: auto;
+        margin-bottom: .2em;
+        justify-self: end;
+        float: right;
+    }
 }
 
 .select-menu {
@@ -219,6 +228,8 @@ article {
         color: var(--vscode-settings-dropdownForeground);
         background: var(--vscode-settings-dropdownBackground);
         border: 1px solid var(--vscode-settings-dropdownBorder);
+        overflow: auto;
+        max-height: 50%;
     }
 
     > button {
@@ -230,9 +241,9 @@ article {
 
     > button.group > .arrow {
         border: solid var(--vscode-settings-dropdownForeground);
-        border-width: 0 3px 3px 0;
-        opacity: 30%;
-        padding: 3px;
+        border-width: 0 .2em .2em 0;
+        opacity: 70%;
+        padding: .2em;
         transform: rotate(-45deg);
         margin-left: auto;
         justify-self: end;

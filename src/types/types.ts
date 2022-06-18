@@ -54,8 +54,9 @@ export interface SpriteCollection {
 
 export namespace select {
     export interface Option {
-        value: string,
         text: string,
+        value?: string,
+        selected?: () => void,
     }
 
     export interface Group {

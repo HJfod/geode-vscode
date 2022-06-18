@@ -1,7 +1,7 @@
 
 import { MetaItem } from '../types/types';
 import { createLoadingCircle, getItemDatabase } from './item';
-import { SelectModel } from './list';
+import { getSelectDatabase } from './list';
 import "./database.scss";
  
 let favorites: string[] = [];
@@ -21,7 +21,7 @@ export function removeFavorite(fav: string) {
 document.addEventListener("DOMContentLoaded", function() {
 	const vscode = acquireVsCodeApi();
 	const content = document.querySelector('main') as HTMLElement;
-	const select = new SelectModel(
+	const select = getSelectDatabase().create(
 		document.getElementById('select-source') as HTMLButtonElement
 	);
 	const search = document.getElementById('search') as HTMLInputElement;
@@ -54,10 +54,7 @@ document.addEventListener("DOMContentLoaded", function() {
 	});
 
 	document.addEventListener('mousedown', e => {
-		document.querySelectorAll('#dropdown').forEach(
-			dropdown => dropdown.classList.add('hidden')
-		);
-		select.hide(e.target as Node);
+		getSelectDatabase().hideAll(e.target as Node);
 	});
 
 	function requestNewState() {
@@ -72,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function() {
 		// get selected state
 		vscode.postMessage({
 			command: 'get-items',
-			parts: select.value.split('::'),
+			parts: select.value?.split('::'),
 		});
 	}
 
