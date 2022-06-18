@@ -2,7 +2,7 @@
 	"name": "geode-support",
 	"displayName": "Geode Support",
 	"description": "Support for the Geode modding framework",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"engines": {
 		"vscode": "^1.68.0"
 	},
@@ -98,9 +98,10 @@
 	},
 	"icon": "images/geode-circle-no-gradient.png",
 	"scripts": {
-		"vscode:prepublish": "npm run compile",
+		"vscode:prepublish-wp": "rd /s /q out & npm run compile & npm run package",
+		"vscode:prepublish": "rd /s /q out & npm run compile",
 		"package": "webpack --mode production --devtool hidden-source-map",
-		"compile": "tsc -p ./src/extension & webpack --config ./src/webview/webpack.config.js --mode production",
+		"compile": "tsc -p ./src/extension && webpack --config ./src/webview/webpack.config.js --mode development",
 		"watch-ext": "tsc -watch -p ./src/extension",
 		"compile-wv": "webpack --config ./src/webview/webpack.config.js --mode development",
 		"pretest": "npm run compile && npm run lint",
@@ -120,9 +121,11 @@
 		"@typescript-eslint/parser": "^5.27.0",
 		"@vscode/test-electron": "^2.1.3",
 		"css-loader": "^6.7.1",
+		"electron-rebuild": "^3.2.7",
 		"eslint": "^8.16.0",
-		"glob": "^8.0.3",
 		"html-webpack-plugin": "^5.5.0",
+		"inline-chunk-html-plugin": "^1.1.1",
+		"mini-css-extract-plugin": "^2.6.0",
 		"mocha": "^10.0.0",
 		"node-loader": "^2.0.0",
 		"sass": "^1.52.3",
@@ -134,9 +137,8 @@
 		"webpack-cli": "^4.10.0"
 	},
 	"dependencies": {
-		"inline-chunk-html-plugin": "^1.1.1",
+		"glob": "^8.0.3",
 		"lodash": "^4.17.21",
-		"mini-css-extract-plugin": "^2.6.0",
 		"open-file-explorer": "^1.0.2",
 		"parse-bmfont-ascii": "^1.0.6",
 		"plist": "^3.0.5",

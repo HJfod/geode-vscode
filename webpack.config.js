@@ -7,7 +7,6 @@
 // smth
 
 const path = require('path');
-const webpack = require('webpack');
 
 /**@type {import('webpack').Configuration}*/
 const config = {
@@ -18,20 +17,21 @@ const config = {
     target: 'node',
     entry: './src/extension/extension.ts',
     output: {
-        path: path.resolve(__dirname, 'dist'),
+        path: path.resolve(__dirname, 'out', 'extension'),
         filename: 'extension.js',
         libraryTarget: 'commonjs2',
         devtoolModuleFilenameTemplate: '../[resource-path]'
     },
     devtool: 'source-map',
     externals: {
-        vscode: 'commonjs vscode'
+        vscode: 'commonjs vscode',
+        sharp: 'commonjs sharp',
     },
     resolve: {
         mainFields: ['browser', 'module', 'main'],
-        extensions: ['.ts', '.js'],
+        extensions: ['.ts', '.js', '.node'],
         alias: {},
-        fallback: {}
+        fallback: {},
     },
     module: {
         rules: [
@@ -41,10 +41,13 @@ const config = {
                 use: [{ loader: 'ts-loader' }]
             },
             {
-              test: /\.node$/,
-              loader: "node-loader",
+                test: /\.node$/,
+                loader: "node-loader",
+                options: {
+                    name: "[name].[ext]",
+                },
             },
         ]
-    }
+    },
 };
 module.exports = config;

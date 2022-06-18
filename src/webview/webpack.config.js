@@ -11,9 +11,7 @@ module.exports = (_, argv) => {
         entry: "./src/webview/database.ts",
         output: {
             filename: "database.js",
-            path: /* argv.mode === 'production' ?
-                path.join(__dirname, "../../dist/webview") : */
-                path.join(__dirname, "../../out/webview")
+            path: path.join(__dirname, "../../out/webview")
         },
         resolve: {
             extensions: [ ".d.ts", ".ts", ".sass", ".scss", ".html" ]

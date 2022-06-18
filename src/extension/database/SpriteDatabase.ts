@@ -80,58 +80,68 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
                 absolute: true,
             };
 
-            // find files
-            for (const pattern of modInfo.resources.files) {
-                for (const file of glob.sync(pattern, globOptions)) {
-                    if (file.endsWith('.ogg')) {
-                        collection.audio.push({
-                            name: basename(file),
-                            path: file,
-                            type: ItemType.audio,
-                            owner: collection.owner,
-                        });
-                    } else {
-                        collection.sprites.push({
-                            name: basename(file),
-                            path: file,
-                            type: ItemType.sprite,
-                            owner: collection.owner,
-                        });
-                    }
-                }
-            }
+            // todo: fix this horrible indentation
 
-            // find spritesheets
-            for (const [sheet, patterns] of Object.entries(modInfo.resources.spritesheets)) {
-                for (const pattern of patterns) {
-                    for (const file of glob.sync(pattern, globOptions)) {
-                        if (sheet in collection.sheets) {
-                            collection.sheets[sheet].push({
-                                name: basename(file),
-                                path: file,
-                                type: ItemType.sheetSprite,
-                                owner: collection.owner,
-                            });
-                        } else {
-                            collection.sheets[sheet] = [{
-                                name: basename(file),
-                                path: file,
-                                type: ItemType.sheetSprite,
-                                owner: collection.owner,
-                            }];
+            if (modInfo.resources) {
+                // find files
+                if (modInfo.resources.files) {
+                    for (const pattern of modInfo.resources.files) {
+                        for (const file of glob.sync(pattern, globOptions)) {
+                            if (file.endsWith('.ogg')) {
+                                collection.audio.push({
+                                    name: basename(file),
+                                    path: file,
+                                    type: ItemType.audio,
+                                    owner: collection.owner,
+                                });
+                            } else {
+                                collection.sprites.push({
+                                    name: basename(file),
+                                    path: file,
+                                    type: ItemType.sprite,
+                                    owner: collection.owner,
+                                });
+                            }
                         }
                     }
                 }
-            }
 
-            // find fonts
-            for (const [name, font] of Object.entries(modInfo.resources.fonts)) {
-                collection.fonts.push({
-                    name: name,
-                    path: join(dir, font.path),
-                    type: ItemType.font,
-                    owner: collection.owner,
-                });
+                // find spritesheets
+                if (modInfo.resources.spritesheets) {
+                    for (const [sheet, patterns] of Object.entries(modInfo.resources.spritesheets)) {
+                        for (const pattern of patterns) {
+                            for (const file of glob.sync(pattern, globOptions)) {
+                                if (sheet in collection.sheets) {
+                                    collection.sheets[sheet].push({
+                                        name: basename(file),
+                                        path: file,
+                                        type: ItemType.sheetSprite,
+                                        owner: collection.owner,
+                                    });
+                                } else {
+                                    collection.sheets[sheet] = [{
+                                        name: basename(file),
+                                        path: file,
+                                        type: ItemType.sheetSprite,
+                                        owner: collection.owner,
+                                    }];
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // find fonts
+                if (modInfo.resources.fonts) {
+                    for (const [name, font] of Object.entries(modInfo.resources.fonts)) {
+                        collection.fonts.push({
+                            name: name,
+                            path: join(dir, font.path),
+                            type: ItemType.font,
+                            owner: collection.owner,
+                        });
+                    }
+                }
             }
         } else {
             // if it's not, then just enumerate files 

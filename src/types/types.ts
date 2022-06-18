@@ -8,15 +8,15 @@ export namespace modjson {
     }
 
     export interface Resources {
-        files: string[],
-        fonts: { [name: string]: Font },
-        spritesheets: { [name: string]: string[] },
+        files?: string[],
+        fonts?: { [name: string]: Font },
+        spritesheets?: { [name: string]: string[] },
     }
 
     export interface Mod {
         id: string;
         name: string;
-        resources: Resources,
+        resources?: Resources,
     }
 }
 

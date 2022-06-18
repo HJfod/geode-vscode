@@ -1,6 +1,6 @@
 import { promises, readFileSync } from "fs";
 import { dirname, join } from "path";
-import { ColorThemeKind, ExtensionContext, Uri, ViewColumn, WebviewPanel, window } from "vscode";
+import { ColorThemeKind, ExtensionContext, Uri, ViewColumn, window } from "vscode";
 import { getOptions } from "../options";
 import { getBMFontDatabase } from "./BMFontDatabase";
 import { getSheetDatabase } from "./SheetDatabase";

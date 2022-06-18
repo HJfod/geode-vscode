@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.0.4
+ - Made the VSIX file actually work lol
+
 ## v0.0.3
 
 ### Changes
