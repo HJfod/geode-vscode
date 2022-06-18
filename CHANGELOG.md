@@ -1,6 +1,13 @@
 # Change Log
 
-## [Unreleased]
+## v0.0.3
+
+### Changes
+
+ * Redesigned & cleaned up sprite browser
+    * Added audio files
+    * Can now create labels from snippets
+ * Other fixes & improvements
 
 ## v0.0.2
 
