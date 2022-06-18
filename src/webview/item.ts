@@ -147,23 +147,25 @@ export class ItemModel {
             options.postMessage({
                 command: 'use-value',
                 value: this.item,
-                type: ''
+                type: undefined
             });
         });
         element.querySelector('#buttons')?.appendChild(useButton);
 
         const dropdownMenu: select.Menu = {
             topLevel: {
-                title: '',
+                text: undefined,
                 options: [],
-                subgroups: [],
             }
         };
         
-        // todo: deal with fonts (have a Create CCLabel for them)
-        dropdownMenu.topLevel.options = [
-            {
-                text: 'Create CCSprite',
+        const createSubMenu: select.Option[] = [];
+        if (
+            this.item.type === ItemType.sprite ||
+            this.item.type === ItemType.sheetSprite
+        ) {
+            createSubMenu.push({
+                text: 'CCSprite',
                 selected: () => {
                     options.postMessage({
                         command: 'use-value',
@@ -171,31 +173,74 @@ export class ItemModel {
                         type: 'CCSprite'
                     });
                 },
-            },
-            {
-                text: 'Create button',
+            });
+
+            createSubMenu.push({
+                text: 'Button',
                 selected: () => {
                     options.postMessage({
                         command: 'use-value',
                         value: this.item,
-                        type: 'CCMenuItemSpriteExtra'
+                        type: 'CCMenuItemSpriteExtra(CCSprite)'
                     });
                 },
-            }
-        ];
+            });
+        }
 
-        if (this.item.type === ItemType.sprite) {
-            dropdownMenu.topLevel.options.push({
-                text: 'Create button w/ ButtonSprite',
+        if (this.item.type === ItemType.font) {
+            createSubMenu.push({
+                text: 'CCLabelBMFont',
                 selected: () => {
                     options.postMessage({
                         command: 'use-value',
                         value: this.item,
-                        type: 'CCMenuItemSpriteExtra+ButtonSprite'
+                        type: 'CCLabelBMFont'
+                    });
+                }
+            });
+
+            createSubMenu.push({
+                text: 'Button w/ ButtonSprite',
+                selected: () => {
+                    options.postMessage({
+                        command: 'use-value',
+                        value: this.item,
+                        type: 'CCMenuItemSpriteExtra(ButtonSprite)'
                     });
                 }
             });
         }
+
+        if (this.item.type === ItemType.sprite) {
+            createSubMenu.push({
+                text: 'Button w/ ButtonSprite',
+                selected: () => {
+                    options.postMessage({
+                        command: 'use-value',
+                        value: this.item,
+                        type: 'CCMenuItemSpriteExtra(ButtonSprite)'
+                    });
+                }
+            });
+        }
+
+        dropdownMenu.topLevel.options?.push({
+            text: 'Use Sprite',
+            selected: () => {
+                options.postMessage({
+                    command: 'use-value',
+                    value: this.item,
+                    type: undefined
+                });
+            },
+        });
+
+        dropdownMenu.topLevel.options?.push({});
+
+        dropdownMenu.topLevel.options?.push({
+            text: 'Create',
+            options: createSubMenu,
+        });
 
         const otherUseButton = document.createElement('button');
         otherUseButton.classList.add('select-button');

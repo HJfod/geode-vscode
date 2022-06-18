@@ -54,18 +54,13 @@ export interface SpriteCollection {
 
 export namespace select {
     export interface Option {
-        text: string,
+        text?: string,
         value?: string,
         selected?: () => void,
-    }
-
-    export interface Group {
-        title: string,
-        options: Option[],
-        subgroups: Group[],
+        options?: Option[],
     }
 
     export interface Menu {
-        topLevel: Group,
+        topLevel: Option,
     }
 }

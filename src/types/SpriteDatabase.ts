@@ -95,35 +95,38 @@ export class SpriteDatabase {
     constructSelectMenu(): select.Menu {
         return {
             topLevel: {
-                title: 'Database',
-                options: [
+                text: 'Database',
+                options: ([
                     { value: 'all', text: 'All', },
                     { value: 'favorites', text: 'Favorites', },
                     { value: 'sprites', text: 'Sprites', },
                     { value: 'fonts', text: 'Fonts', },
                     { value: 'audio', text: 'Audio', },
-                ],
-                subgroups: this.collections.map(col => {
-                    const title = col.owner.mod ?
-                        col.owner.mod.name :
-                        col.owner.directory;
-
-                    const options: select.Option[] = [
-                        { value: `all::${col.owner.directory}`, text: 'All', },
-                        { value: `sprites::${col.owner.directory}`, text: 'Sprites', },
-                        { value: `fonts::${col.owner.directory}`, text: 'Fonts', },
-                        { value: `audio::${col.owner.directory}`, text: 'Audio', },
-                    ];
-
-                    Object.keys(col.sheets).forEach(k => {
-                        options.push({
-                            value: `sheet::${col.owner.directory}::${k}`,
-                            text: k,
+                    {},
+                ] as select.Option[]).concat(
+                    this.collections.map(col => {
+                        const text = col.owner.mod ?
+                            col.owner.mod.name :
+                            col.owner.directory;
+    
+                        const options: select.Option[] = [
+                            { value: `all::${col.owner.directory}`, text: 'All', },
+                            { value: `sprites::${col.owner.directory}`, text: 'Sprites', },
+                            { value: `fonts::${col.owner.directory}`, text: 'Fonts', },
+                            { value: `audio::${col.owner.directory}`, text: 'Audio', },
+                            {},
+                        ];
+    
+                        Object.keys(col.sheets).forEach(k => {
+                            options.push({
+                                value: `sheet::${col.owner.directory}::${k}`,
+                                text: k,
+                            });
                         });
-                    });
-
-                    return { title, options, subgroups: [], };
-                }),
+    
+                        return { text, options, };
+                    })
+                ),
             }
         };
     }

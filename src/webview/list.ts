@@ -18,11 +18,7 @@ export class SelectModel {
         this.text = undefined;
         this.arrow = true;
         this.options = {
-            topLevel: {
-                title: '',
-                options: [],
-                subgroups: [],
-            },
+            topLevel: {},
         };
         this.textValueMap = {};
 
@@ -31,38 +27,43 @@ export class SelectModel {
         });
     }
 
-    private createMenu(group: select.Group, x: number, y: number) {
+    private createMenu(group: select.Option, x: number, y: number) {
         // create new popup
         const popup = document.createElement('div');
         popup.classList.add('select-menu');
         popup.style.top = `${y}px`;
         popup.style.left = `${x}px`;
 
-        for (const option of group.options) {
-            const button = document.createElement('button');
-            button.innerHTML = option.text;
-            button.addEventListener('click', _ => {
-                this.value = option.value;
-                if (option.selected) {
-                    option.selected();
+        if (group.options) {
+            for (const option of group.options) {
+                // implicit separator
+                if (!option.text && !option.value) {
+                    const hr = document.createElement('div');
+                    hr.classList.add('hr');
+                    popup.appendChild(hr);
+                } else {
+                    const button = document.createElement('button');
+                    button.innerHTML = option.text ?? option.value as string;
+                    if (option.options) {
+                        button.innerHTML += '<span class="arrow"></span>';
+                        button.classList.add('group');
+                    }
+                    button.addEventListener('click', _ => {
+                        this.value = option.value;
+                        if (option.selected) {
+                            option.selected();
+                        }
+                        if (option.options) {
+                            const rect = button.getBoundingClientRect();
+                            this.createMenu(option, rect.left + rect.width, rect.top);
+                        } else {
+                            this.update();
+                            this.hide();
+                        }
+                    });
+                    popup.appendChild(button);
                 }
-                this.update();
-                this.hide();
-            });
-            popup.appendChild(button);
-        }
-
-        for (const subgroup of group.subgroups) {
-            const button = document.createElement('button');
-            button.innerHTML = `${
-                subgroup.title
-            }<span class="arrow"></span>`;
-            button.classList.add('group');
-            button.addEventListener('click', _ => {
-                const rect = button.getBoundingClientRect();
-                this.createMenu(subgroup, rect.left + rect.width, rect.top);
-            });
-            popup.appendChild(button);
+            }
         }
 
         document.body.appendChild(popup);
@@ -114,17 +115,17 @@ export class SelectModel {
     setOptions(menu: select.Menu) {
         this.options = menu;
         this.textValueMap = {};
-        const iterateAddOptions = (group: select.Group) => {
-            for (const opt of group.options) {
-                if (opt.value) {
-                    this.textValueMap[opt.value] = {
-                        text: opt.text,
-                        group: group.title,
-                    };
+        const iterateAddOptions = (group: select.Option) => {
+            if (group.options) {
+                for (const opt of group.options) {
+                    if (opt.value) {
+                        this.textValueMap[opt.value] = {
+                            text: opt.text ?? opt.value ?? 'untitled option',
+                            group: group.text ?? group.value ?? 'untitled group',
+                        };
+                    }
+                    iterateAddOptions(opt);
                 }
-            }
-            for (const grp of group.subgroups) {
-                iterateAddOptions(grp);
             }
         };
         iterateAddOptions(menu.topLevel);

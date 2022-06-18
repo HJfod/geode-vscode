@@ -4,7 +4,7 @@ import { ColorThemeKind, ExtensionContext, Uri, ViewColumn, WebviewPanel, window
 import { getOptions } from "../options";
 import { getBMFontDatabase } from "./BMFontDatabase";
 import { getSheetDatabase } from "./SheetDatabase";
-import { createCCMenuItemSpriteExtra, createCCMISEithBS, createCCSprite, insertSpriteName } from "../source/snippet";
+import { insertSnippet } from "../source/snippet";
 import { getSpriteDatabase } from "./SpriteDatabase";
 import openExplorer from 'open-file-explorer';
 import { Item } from "../../types/types";
@@ -243,23 +243,7 @@ export function buildDatabasePanel(context: ExtensionContext) {
 
                 case 'use-value': {
                     if (targetEditor && window.visibleTextEditors.some(e => e === targetEditor)) {
-                        switch (message.type) {
-                            case 'CCSprite': {
-                                createCCSprite(targetEditor, message.value);
-                            } break;
-
-                            case 'CCMenuItemSpriteExtra': {
-                                createCCMenuItemSpriteExtra(targetEditor, message.value);
-                            } break;
-
-                            case 'CCMenuItemSpriteExtra+ButtonSprite': {
-                                createCCMISEithBS(targetEditor, message.value);
-                            } break;
-
-                            default: {
-                                insertSpriteName(targetEditor, message.value);
-                            } break;
-                        }
+                        insertSnippet(targetEditor, message.value, message.type);
                         panel.dispose();
                     } else {
                         window.showErrorMessage(
