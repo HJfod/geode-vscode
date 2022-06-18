@@ -4,7 +4,7 @@ import { ColorThemeKind, ExtensionContext, Uri, ViewColumn, WebviewPanel, window
 import { getOptions } from "../options";
 import { getBMFontDatabase } from "./BMFontDatabase";
 import { getSheetDatabase } from "./SheetDatabase";
-import { insertSnippet } from "../source/snippet";
+import { insertSnippet } from "../source/textSnippet";
 import { getSpriteDatabase } from "./SpriteDatabase";
 import openExplorer from 'open-file-explorer';
 import { Item } from "../../types/types";

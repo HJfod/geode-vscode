@@ -31,8 +31,6 @@ export class SelectModel {
         // create new popup
         const popup = document.createElement('div');
         popup.classList.add('select-menu');
-        popup.style.top = `${y}px`;
-        popup.style.left = `${x}px`;
 
         if (group.options) {
             for (const option of group.options) {
@@ -68,7 +66,18 @@ export class SelectModel {
 
         document.body.appendChild(popup);
         this.popups.push(popup);
+        
+        const size = popup.getBoundingClientRect();
+        const winSize = document.body.getBoundingClientRect();
 
+        // make sure popup doesn't go outside window
+        while (x + size.width > winSize.width) {
+            x -= size.width;
+        }
+
+        popup.style.top = `${y}px`;
+        popup.style.left = `${x}px`;
+        
         return popup;
     }
 

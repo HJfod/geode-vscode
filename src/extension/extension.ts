@@ -5,7 +5,7 @@ import { geode } from './geode/geode';
 import { refreshSpriteDatabase } from './database/SpriteDatabase';
 import { loadData, saveData, setContext } from './save';
 import { buildDatabasePanel } from './database/databaseWebView';
-import { createClassWalkthrough } from './source/snippet';
+import { createClassWalkthrough } from './source/classSnippet';
 
 export function activate(context: ExtensionContext) {
 	// save context to global variable
