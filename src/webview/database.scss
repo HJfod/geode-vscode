@@ -25,6 +25,7 @@ input {
 
 input[type="search"] {
     height: 27px;
+    min-width: 250px;
 }
 
 textarea {
@@ -110,17 +111,24 @@ article {
         margin-bottom: 2px;
     }
 
-    a {
-        word-break: break-all;
-        max-width: var(--item-width);
-        font-style: italic;
-        opacity: 25%;
-        font-size: 0.8em;
-    }
+    > #links {
+        & {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }
 
-    a:hover {
-        cursor: pointer;
-        opacity: 100%;
+        a {
+            word-break: break-all;
+            max-width: var(--item-width);
+            font-weight: bold;
+            opacity: 45%;
+        }
+
+        a:hover {
+            cursor: pointer;
+            opacity: 100%;
+        }
     }
 
     > #image-div {
@@ -200,17 +208,21 @@ article {
 }
 
 .select-button {
-    & {
+    &.arrowful {
         display: flex;
         justify-content: start;
         align-items: center;
         gap: 10px;
     }
 
+    > .group-name {
+        opacity: 40%;
+    }
+
     > .arrow {
         border: solid var(--vscode-settings-dropdownForeground);
         border-width: 0 .2em .2em 0;
-        opacity: 70%;
+        opacity: 50%;
         padding: .2em;
         transform: rotate(45deg);
         margin-left: auto;
@@ -242,7 +254,7 @@ article {
     > button.group > .arrow {
         border: solid var(--vscode-settings-dropdownForeground);
         border-width: 0 .2em .2em 0;
-        opacity: 70%;
+        opacity: 50%;
         padding: .2em;
         transform: rotate(-45deg);
         margin-left: auto;

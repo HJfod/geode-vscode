@@ -21,6 +21,7 @@ export function createLoadingCircle(parent: Element | null) {
 export interface ItemOptions {
     meta: MetaItem,
     favorite: boolean,
+    globalSelect: SelectModel,
     postMessage: (message: unknown) => void
 }
 
@@ -136,7 +137,7 @@ export class ItemModel {
         element.innerHTML = `
             <div id="image-div"></div>
             <p>${this.item.name}</p>
-            ${this.sheet ? `<a>${this.sheet}</a>` : ''}
+            <div id="links"></div>
             <div id="buttons"></div>
         `;
 
@@ -202,7 +203,9 @@ export class ItemModel {
 
         this.select = getSelectDatabase().create(otherUseButton);
         this.select.text = '...';
+        this.select.arrow = false;
         this.select.setOptions(dropdownMenu);
+        this.select.update();
 
         const starButton = document.createElement('button');
         starButton.innerHTML = '★';
@@ -226,13 +229,22 @@ export class ItemModel {
         });
         element.querySelector('#buttons')?.appendChild(starButton);
 
+        const srcLink = document.createElement('a');
+        srcLink.innerHTML = 'Source';
+        srcLink.addEventListener('click', _ => {
+            options.globalSelect.value = `all::${this.item.owner.directory}`;
+            options.globalSelect.update();
+        });
+        element.querySelector('#links')?.appendChild(srcLink);
+        
         if (this.sheet) {
-            const sheetLink = element.querySelector('a');
-            sheetLink?.addEventListener('click', _ => {
-                const select = document.getElementById('select-source') as HTMLSelectElement;
-                select.value = `sheet::${this.item.owner.directory}::${this.sheet}`;
-                select.dispatchEvent(new Event('change'));
+            const sheetLink = document.createElement('a');
+            sheetLink.innerHTML = 'Sheet';
+            sheetLink.addEventListener('click', _ => {
+                options.globalSelect.value = `sheet::${this.item.owner.directory}::${this.sheet}`;
+                options.globalSelect.update();
             });
+            element.querySelector('#links')?.appendChild(sheetLink);
         }
 
         const hoverItem = document.createElement('div');

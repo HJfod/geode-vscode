@@ -7,7 +7,7 @@ export class SelectModel {
     value: string | undefined;
     text: string | undefined;
     arrow: boolean;
-    textValueMap: { [name: string]: string };
+    textValueMap: { [name: string]: { text: string, group: string, } };
     options: select.Menu;
     onChangeStateFun: ((value: string | undefined) => void) | null = null;
 
@@ -46,7 +46,7 @@ export class SelectModel {
                 if (option.selected) {
                     option.selected();
                 }
-                this.stateChanged();
+                this.update();
                 this.hide();
             });
             popup.appendChild(button);
@@ -117,7 +117,10 @@ export class SelectModel {
         const iterateAddOptions = (group: select.Group) => {
             for (const opt of group.options) {
                 if (opt.value) {
-                    this.textValueMap[opt.value] = opt.text;
+                    this.textValueMap[opt.value] = {
+                        text: opt.text,
+                        group: group.title,
+                    };
                 }
             }
             for (const grp of group.subgroups) {
@@ -131,12 +134,18 @@ export class SelectModel {
         this.onChangeStateFun = fun;
     }
 
-    stateChanged() {
+    update() {
         const arrow = this.arrow ? '<span class="arrow"></span>' : '';
         if (this.text) {
             this.button.innerHTML = `${this.text}${arrow}`;
         } else if (this.value) {
-            this.button.innerHTML = `${this.textValueMap[this.value]}${arrow}`;
+            const txt = this.textValueMap[this.value];
+            this.button.innerHTML = `<span class="group-name">${txt.group}</span>${txt.text}${arrow}`;
+        }
+        if (this.arrow) {
+            this.button.classList.add('arrowful');
+        } else {
+            this.button.classList.remove('arrowful');
         }
         if (this.onChangeStateFun) {
             this.onChangeStateFun(this.value);

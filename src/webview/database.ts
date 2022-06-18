@@ -85,6 +85,7 @@ document.addEventListener("DOMContentLoaded", function() {
 			const item = getItemDatabase().create({
 				meta: meta,
 				favorite: favorites.some(f => f === meta.item.name),
+				globalSelect: select,
 				// idk if this is unsafe
 				// the docs said to never pass vscode to global scope
 				// but since all the items are allocated inside this 
@@ -110,7 +111,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 				// update select value
 				select.value = message.default;
-				select.stateChanged();
+				select.update();
 			} break;
 
 			case 'items': {
