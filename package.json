@@ -2,7 +2,7 @@
 	"name": "geode-support",
 	"displayName": "Geode Support",
 	"description": "Support for the Geode modding framework",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"engines": {
 		"vscode": "^1.68.0"
 	},
@@ -94,14 +94,20 @@
 					"default": []
 				}
 			}
-		}
+		},
+		"jsonValidation": [
+			{
+				"fileMatch": "mod.json",
+				"url": "./out/extension/mod-info-validation.json"
+			}
+		]
 	},
 	"icon": "images/geode-circle-no-gradient.png",
 	"scripts": {
 		"vscode:prepublish-wp": "rd /s /q out & npm run compile & npm run package",
 		"vscode:prepublish": "rd /s /q out & npm run compile",
 		"package": "webpack --mode production --devtool hidden-source-map",
-		"compile": "tsc -p ./src/extension && webpack --config ./src/webview/webpack.config.js --mode development",
+		"compile": "copy src/extension/mod-info-validation.json out/extension/mod-info-validation.json && tsc -p ./src/extension && webpack --config ./src/webview/webpack.config.js --mode development",
 		"watch-ext": "tsc -watch -p ./src/extension",
 		"compile-wv": "webpack --config ./src/webview/webpack.config.js --mode development",
 		"pretest": "npm run compile && npm run lint",
