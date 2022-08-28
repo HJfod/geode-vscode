@@ -1,11 +1,11 @@
 import { promises, readFileSync } from "fs";
 import { dirname, join } from "path";
 import { ColorThemeKind, ExtensionContext, Uri, ViewColumn, window } from "vscode";
-import { getOptions } from "../options";
+import { getOptions, updateOption } from "../options";
 import { getBMFontDatabase } from "./BMFontDatabase";
 import { getSheetDatabase } from "./SheetDatabase";
 import { insertSnippet } from "../source/textSnippet";
-import { getSpriteDatabase } from "./SpriteDatabase";
+import { getSpriteDatabase, refreshSpriteDatabase } from "./SpriteDatabase";
 import openExplorer from 'open-file-explorer';
 import { Item } from "../../types/types";
 import { pick } from "../../types/SpriteDatabase";
@@ -61,6 +61,7 @@ export function buildDatabasePanel(context: ExtensionContext) {
                             getOptions().databaseShowFavoritesByDefault &&
                             database.favorites.length ? 'favorites' : 'all',
                         options: database.constructSelectMenu(),
+                        textureQuality: getOptions().textureQuality,
                     });
                 } break;
 
@@ -161,6 +162,15 @@ export function buildDatabasePanel(context: ExtensionContext) {
                     } else {
                         database.favorites = database.favorites.filter(f => f !== message.name);
                     }
+                } break;
+
+                case 'set-quality': {
+                    updateOption('textureQuality', message.value);
+                    getOptions().textureQuality = message.value;
+                    refreshSpriteDatabase(null);
+                    panel.webview.postMessage({
+                        command: 'update-quality',
+                    });
                 } break;
 
                 case 'load-image': {
@@ -276,6 +286,14 @@ export function buildDatabasePanel(context: ExtensionContext) {
                             openExplorer(dirname(message.sprite.path), _ => {});
                         }
                     });
+                } break;
+
+                case 'show-error': {
+                    window.showErrorMessage(message.value);
+                } break;
+
+                case 'show-info': {
+                    window.showInformationMessage(message.value);
                 } break;
 
                 default: {

@@ -17,8 +17,8 @@ export namespace geode {
 	export class ConfigJson {
 		@JsonProperty({ name: 'working-installation' })
 		workingInstallation: number = 0;
-		@JsonProperty()
-		installations: Installation[] = [];
+		@JsonProperty({ name: 'install_path' })
+		installPath?: Installation;
 	}
 
 	let configJson: ConfigJson | null = null;
@@ -26,14 +26,14 @@ export namespace geode {
 	export function setupConfig() {
 		refreshOptions();
 		
-		if (!getOptions().geodeSuitePath) {
-			const env = process.env.GEODE_SUITE as string;
+		if (!getOptions().geodeSdkPath) {
+			const env = process.env.GEODE_SDK as string;
 			if (env && existsSync(env)) {
-				updateOption('geodeSuitePath', env);
-				window.showInformationMessage('Geode: Automatically detected Suite path :)');
+				updateOption('geodeSdkPath', env);
+				window.showInformationMessage('Geode: Automatically detected Geode path :)');
 			}
 		}
-		const path = `${getOptions().geodeSuitePath}/../config.json`;
+		const path = `${getOptions().geodeCliPath}/config.json`;
 		if (existsSync(path)) {
 			configJson = new JsonSerializer().deserializeObject(
 				JSON.parse(readFileSync(path).toString()),
@@ -47,15 +47,19 @@ export namespace geode {
 	}
 
 	export function getWorkingInstallation(): Installation | undefined {
-		return configJson?.installations[configJson.workingInstallation];
+		return configJson?.installPath;
 	}
 
-	export function isSuiteInstalled(): boolean {
-		return existsSync(getOptions().geodeSuitePath ?? "");
+	export function isSdkInstalled(): boolean {
+		return existsSync(getOptions().geodeSdkPath ?? "");
+	}
+
+	export function isCliInstalled(): boolean {
+		return existsSync(getOptions().geodeSdkPath ?? "");
 	}
 
 	export function runCliCmd(cmd: string) {
-		return execSync(`${getOptions().geodeSuitePath}/../bin/geode.exe ${cmd}`).toString();
+		return execSync(`${getOptions().geodeCliPath}//geode.exe ${cmd}`).toString();
 	}
 
 	export async function launchGD(channel: OutputChannel | undefined = undefined) {

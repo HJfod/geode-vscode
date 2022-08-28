@@ -1,7 +1,7 @@
 import { getOptions } from '../options';
 import { geode } from '../geode/geode';
 import { basename, join } from 'path';
-import { readdirSync, readFileSync,  existsSync } from 'fs';
+import { readdirSync, readFileSync,  existsSync, exists } from 'fs';
 import { OutputChannel, workspace } from 'vscode';
 import { SpriteCollection, modjson, ItemType } from '../../types/types';
 import { SpriteDatabase } from '../../types/SpriteDatabase';
@@ -9,6 +9,18 @@ import G, { glob } from 'glob';
 
 function removeQualityDecorators(file: string) {
     return file.replace(/-uhd|-hd/g, '');
+}
+
+function preferredFile(rawFile: string) {
+    let ext = "";
+    switch (getOptions().textureQuality) {
+        case 'UHD': ext = '-uhd'; break;
+        case 'HD':  ext = '-hd';  break;
+    }
+    const file = removeQualityDecorators(rawFile)
+        .replace('.png', `${ext}.png`)
+        .replace('.plist', `${ext}.plist`);
+    return existsSync(file) ? file : rawFile;
 }
 
 function readdirRecursiveSync(dir: string) {
@@ -43,6 +55,8 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
         join(geode.getWorkingInstallation()?.path ?? "", 'Resources'),
         ...getOptions().spriteSearchDirectories
     ];
+
+    console.log(database.searchDirectories);
 
     // check if the current workspace(s) contain Geode mods
     if (workspace.workspaceFolders) {
@@ -151,14 +165,15 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
             const files = readdirRecursiveSync(dir);
 
             // find spritesheets
-            for (const sheetPath of files) {
-                if (sheetPath.endsWith('.plist')) {
+            for (const rawSheetPath of files) {
+                if (rawSheetPath.endsWith('.plist')) {
                     // check if this is a spritesheet (does it have a corresponding .png file)
-                    if (!existsSync(sheetPath.replace('.plist', '.png'))) {
+                    if (!existsSync(rawSheetPath.replace('.plist', '.png'))) {
                         continue;
                     }
-
-                    const sheetName = removeQualityDecorators(basename(sheetPath));
+                    
+                    const sheetPath = preferredFile(rawSheetPath);
+                    const sheetName = removeQualityDecorators(basename(rawSheetPath));
 
                     // read sheet data and find all *.png strings inside
                     readFileSync(sheetPath).toString().match(/\w+\.png/g)?.forEach(match => {
@@ -189,9 +204,10 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
             }
 
             // find fonts
-            for (const fontPath of files) {
-                if (fontPath.endsWith('.fnt')) {
-                    const fontName = removeQualityDecorators(basename(fontPath));
+            for (const rawFontPath of files) {
+                if (rawFontPath.endsWith('.fnt')) {
+                    const fontPath = preferredFile(rawFontPath);
+                    const fontName = removeQualityDecorators(basename(rawFontPath));
                     // has this font been added already?
                     if (!collection.fonts.some(fnt => fnt.name === fontName)) {
                         collection.fonts.push({
@@ -205,8 +221,9 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
             }
 
             // find songs
-            for (const audioPath of files) {
-                if (audioPath.endsWith('.ogg')) {
+            for (const rawAudioPath of files) {
+                if (rawAudioPath.endsWith('.ogg')) {
+                    const audioPath = preferredFile(rawAudioPath);
                     const audioName = removeQualityDecorators(basename(audioPath));
                     // has this font been added already?
                     if (!collection.audio.some(a => a.name === audioName)) {
@@ -221,8 +238,9 @@ export function refreshSpriteDatabase(channel: OutputChannel | null = null) {
             }
 
             // find sprites
-            for (const filePath of files) {
-                if (filePath.endsWith('.png')) {
+            for (const rawFilePath of files) {
+                if (rawFilePath.endsWith('.png')) {
+                    const filePath = preferredFile(rawFilePath);
                     const fileName = removeQualityDecorators(basename(filePath));
                     // is this a spritesheet?
                     if (fileName.replace('.png', '.plist') in collection.sheets) {

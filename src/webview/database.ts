@@ -24,6 +24,9 @@ document.addEventListener("DOMContentLoaded", function() {
 	const select = getSelectDatabase().create(
 		document.getElementById('select-source') as HTMLButtonElement
 	);
+	const qualitySelect = getSelectDatabase().create(
+		document.getElementById('select-quality') as HTMLButtonElement
+	);
 	const search = document.getElementById('search') as HTMLInputElement;
 	const status = document.getElementById('status') as HTMLElement;
 
@@ -44,6 +47,13 @@ document.addEventListener("DOMContentLoaded", function() {
 			threshold: 0.1
 		}
 	);
+
+	qualitySelect.onChangeState(_ => {
+		vscode.postMessage({
+			command: 'set-quality',
+			value: qualitySelect.value
+		});
+	});
 
 	select.onChangeState(_ => {
 		requestNewState();
@@ -112,6 +122,33 @@ document.addEventListener("DOMContentLoaded", function() {
 				// update select value
 				select.value = message.default;
 				select.update();
+
+				// quality options
+				qualitySelect.setOptions({
+					topLevel: {
+						text: 'Quality',
+						options: [
+							{
+								text: 'Low',
+								value: 'Low'
+							},
+							{
+								text: 'Medium',
+								value: 'HD'
+							},
+							{
+								text: 'High',
+								value: 'UHD'
+							},
+						]
+					}
+				});
+				qualitySelect.value = message.textureQuality;
+				qualitySelect.update();
+			} break;
+
+			case 'update-quality': {
+				requestNewState();
 			} break;
 
 			case 'items': {

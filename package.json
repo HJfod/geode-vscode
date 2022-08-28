@@ -73,9 +73,14 @@
 		"configuration": {
 			"title": "Geode Support",
 			"properties": {
-				"geode-support.geodeSuitePath": {
+				"geode-support.geodeSdkPath": {
 					"type": "string",
-					"description": "Path to Geode Suite",
+					"description": "Path to Geode SDK",
+					"default": ""
+				},
+				"geode-support.geodeCliPath": {
+					"type": "string",
+					"description": "Path to Geode CLI",
 					"default": ""
 				},
 				"geode-support.workingInstallation": {
@@ -92,6 +97,16 @@
 					"type": "array",
 					"description": "Sprite & spritesheet search directories for intellisense",
 					"default": []
+				},
+				"geode-support.textureQuality": {
+					"type": "string",
+					"description": "Quality of sprite textures to load by default",
+					"oneOf": [
+						"Low",
+						"HD",
+						"UHD"
+					],
+					"default": "HD"
 				}
 			}
 		},
@@ -120,6 +135,7 @@
 		"@types/mocha": "^9.1.1",
 		"@types/node": "16.x",
 		"@types/plist": "^3.0.2",
+		"@types/ps-node": "^0.1.1",
 		"@types/sharp": "^0.30.4",
 		"@types/vscode": "^1.68.0",
 		"@types/vscode-webview": "^1.57.0",

@@ -21,11 +21,18 @@ export function activate(context: ExtensionContext) {
 
 	console.log('Loaded config.json');
 
-	// check if Geode Suite is installed
-	if (!geode.isSuiteInstalled()) {
+	// check if Geode SDK is installed
+	if (!geode.isSdkInstalled()) {
 		window.showErrorMessage(
-			'Geode Suite path is not set! Please set ' +
-			'\'geode-support.geodeSuitePath\' in user settings.'
+			'Geode SDK path is not set! Please set ' +
+			'\'geode-support.geodeSdkPath\' in user settings.'
+		);
+	}
+	// check if Geode CLI is installed
+	if (!geode.isCliInstalled()) {
+		window.showErrorMessage(
+			'Geode CLI path is not set! Please set ' +
+			'\'geode-support.geodeCliPath\' in user settings.'
 		);
 	}
 	
@@ -34,7 +41,7 @@ export function activate(context: ExtensionContext) {
 	// create output window
 	const channel = window.createOutputChannel('Geode');
 
-	channel.appendLine(`Geode Suite location: ${getOptions().geodeSuitePath}`);
+	channel.appendLine(`Geode SDK location: ${getOptions().geodeSdkPath}`);
 	channel.appendLine(`Geode CLI version: ${geode.runCliCmd('--version')}`);
 	
 	console.log('Refreshing sprite database');
@@ -46,42 +53,42 @@ export function activate(context: ExtensionContext) {
 
 	// register commands
 	context.subscriptions.push(commands.registerCommand('geode-support.launchGD', () => {
-		if (!geode.isSuiteInstalled()) {
+		if (!geode.isSdkInstalled()) {
 			window.showErrorMessage(
-				'Geode Suite path is not set! Please set ' +
-				'\'geode-support.geodeSuitePath\' in user settings.'
+				'Geode SDK path is not set! Please set ' +
+				'\'geode-support.geodeSdkPath\' in user settings.'
 			);
 			return;
 		}
 		geode.launchGD(channel);
 	}));
 
-	context.subscriptions.push(commands.registerCommand('geode-support.selectInstallation', () => {
-		if (!geode.isSuiteInstalled()) {
-			window.showErrorMessage(
-				'Geode Suite path is not set! Please set ' +
-				'\'geode-support.geodeSuitePath\' in user settings.'
-			);
-			return;
-		}
-		window.showQuickPick(
-			geode.getConfig()?.installations.map((s, ix) => {
-				return {
-					label: join(s.path, s.executable),
-					description: s.nightly ? 'Nightly' : 'Stable',
-					command: ix
-				};
-			}) ?? []
-		).then(inst => {
-			if (inst) {
-				try {
-					channel.appendLine(`Set installation: ${geode.runCliCmd(`config --cwi ${inst?.command}`)}`);
-				} catch(e) {
-					channel.appendLine(`Error setting installation: ${e}`);
-				}
-			}
-		});
-	}));
+	// context.subscriptions.push(commands.registerCommand('geode-support.selectInstallation', () => {
+	// 	if (!geode.isSdkInstalled()) {
+	// 		window.showErrorMessage(
+	// 			'Geode SDK path is not set! Please set ' +
+	// 			'\'geode-support.geodeSdkPath\' in user settings.'
+	// 		);
+	// 		return;
+	// 	}
+	// 	window.showQuickPick(
+	// 		geode.getConfig()?.installations.map((s, ix) => {
+	// 			return {
+	// 				label: join(s.path, s.executable),
+	// 				description: s.nightly ? 'Nightly' : 'Stable',
+	// 				command: ix
+	// 			};
+	// 		}) ?? []
+	// 	).then(inst => {
+	// 		if (inst) {
+	// 			try {
+	// 				channel.appendLine(`Set installation: ${geode.runCliCmd(`config --cwi ${inst?.command}`)}`);
+	// 			} catch(e) {
+	// 				channel.appendLine(`Error setting installation: ${e}`);
+	// 			}
+	// 		}
+	// 	});
+	// }));
 
 	context.subscriptions.push(commands.registerCommand('geode-support.browseSpriteDatabase', () => {
 		buildDatabasePanel(context);

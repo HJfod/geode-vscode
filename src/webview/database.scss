@@ -271,3 +271,13 @@ article {
         float: right;
     }
 }
+
+.side-by-side {
+    & {
+        display: flex;
+    }
+
+    > * {
+        margin-right: 1em;
+    }
+}

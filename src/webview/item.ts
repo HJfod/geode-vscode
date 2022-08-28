@@ -31,6 +31,7 @@ export class ItemModel {
     id: string;
     element: HTMLElement;
     image: HTMLImageElement | HTMLParagraphElement | null = null;
+    imageData: string | null;
     imageDiv: HTMLDivElement;
     isFavorite: boolean;
     options: ItemOptions;
@@ -42,6 +43,7 @@ export class ItemModel {
         this.sheet = options.meta.sheet;
         this.isFavorite = options.favorite;
         this.id = options.meta.item.name;
+        this.imageData = null;
         this.select = null;
         this.element = this.build(options);
         this.imageDiv = this.element.querySelector('#image-div') as HTMLDivElement;
@@ -68,6 +70,7 @@ export class ItemModel {
         this.image = document.createElement('img');
         this.imageDiv.appendChild(this.image);
         if (data) {
+            this.imageData = data;
             (this.image as HTMLImageElement).src = `data:image/png;base64,${data}`;
         } else {
             this.addFailedImage();
@@ -234,6 +237,59 @@ export class ItemModel {
                 });
             },
         });
+
+        if (
+            this.item.type === ItemType.sprite ||
+            this.item.type === ItemType.sheetSprite
+        ) {
+            dropdownMenu.topLevel.options?.push({
+                text: 'Copy Image',
+                selected: () => {
+                    if (this.imageData) {
+                        options.postMessage({
+                            command: 'show-info',
+                            value: 'Copying image...'
+                        });
+
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const img = new Image();
+
+                        img.onload = () => {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                            canvas.toBlob(b => {
+                                if (b) {
+                                    navigator.clipboard.write([
+                                        new ClipboardItem({
+                                            // eslint-disable-next-line @typescript-eslint/naming-convention
+                                            'image/png': b
+                                        })
+                                    ]);
+                                    options.postMessage({
+                                        command: 'show-info',
+                                        value: 'Image copied'
+                                    });
+                                } else {
+                                    options.postMessage({
+                                        command: 'show-error',
+                                        value: 'Unable to copy image'
+                                    });
+                                }
+                            });
+                        };
+                        img.src = `data:image/png;base64,${this.imageData}`;
+                    } else {
+                        options.postMessage({
+                            command: 'show-error',
+                            value: 'Unable to copy image'
+                        });
+                    }
+                },
+            });
+        }
 
         dropdownMenu.topLevel.options?.push({});
 
